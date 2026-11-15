@@ -491,3 +491,218 @@ KINDS.kofun = {
   },
   draw(g, P, t, e, env) { put(g, P.spr, env.sh * 0.5, 4, 5); },
 };
+
+// ================================================================ Asuka and Nara ===
+// A hip-and-gable roof with deep eaves and grey tiles, its ends lifting gently (Japanese roofs curve
+// less than Chinese ones). Returns the points of the roof, centred on x = 0 with its eave line at y0.
+export function jroof(w, y0, h, eave, lift = 8) {
+  const p = [];
+  for (let i = 0; i <= 12; i++) { const f = i / 12, x = -w - eave + f * (w + eave) * 2, up = Math.pow(Math.abs(f * 2 - 1), 4); p.push([x, y0 - up * lift]); }
+  // the hip slopes up to a short gable, then the ridge
+  p.push([w * 0.62, y0 - h * 0.62], [w * 0.5, y0 - h * 0.66], [w * 0.4, y0 - h], [-w * 0.4, y0 - h], [-w * 0.5, y0 - h * 0.66], [-w * 0.62, y0 - h * 0.62]);
+  return p;
+}
+const tileLines = (col, w, y0, h) => (g) => { g.strokeStyle = rgb(shade(col, -0.35), 0.45); g.lineWidth = 1.1; for (let x = -w * 1.4; x < w * 1.4; x += 5) { g.beginPath(); g.moveTo(x * 0.42, y0 - h); g.lineTo(x, y0 + 2); g.stroke(); } g.fillStyle = rgb(shade(col, 0.2), 0.4); g.fillRect(-w * 1.5, y0 - 4, w * 3, 3); };
+// v0: Hōryū-ji's golden hall, two roofs, old unpainted wood and white walls. v1: the Great Buddha Hall at
+// Tōdai-ji, very wide, with golden ridge ends. v2: a temple gate. v3: a small hall.
+const TERA = [
+  { w: 120, h: 70, wood: '#6a4e3a', wall: '#ece4d2', tile: '#5a5c60', two: 1, base: 16 },
+  { w: 250, h: 120, wood: '#7a4a32', wall: '#e8dcc6', tile: '#4e5258', two: 1, base: 20, gold: 1 },
+  { w: 90, h: 92, wood: '#a8442e', wall: '#e8dcc6', tile: '#55585c', two: 1, base: 10, gate: 1 },
+  { w: 80, h: 60, wood: '#6a4e3a', wall: '#ece4d2', tile: '#5a5c60', two: 0, base: 10 },
+];
+KINDS.tera = {
+  bake(mk, v = 0) {
+    const T = TERA[v], r = rng(7000 + v), { w, h, base } = T, eave = w * 0.42, sh = mk('tera' + v, [-w - eave - 20, -base - h - (T.two ? 230 : 120) * (w / 120), w + eave + 20, 6]);
+    sh.piece([[-w - 14, 4], [-w - 10, -base], [w + 10, -base], [w + 14, 4]], '#b0a894', { round: 2, paint: (g) => { g.strokeStyle = 'rgba(70,60,50,.3)'; g.lineWidth = 1; for (let y = -5; y > -base; y -= 5) { g.beginPath(); g.moveTo(-w - 12, y); g.lineTo(w + 12, y); g.stroke(); } } });
+    const yb = -base, yt = -base - h, win = [];
+    sh.piece(rect(-w, yb, w, yt), T.wall, { round: 1.5, lift: 1.2, paint: (g) => {
+      const bays = T.gate ? 3 : v === 1 ? 7 : 5, bw = (w * 2) / bays;
+      for (let i = 0; i < bays; i++) { const x = -w + i * bw; if (T.gate && i === 1) { g.fillStyle = 'rgba(30,20,14,.9)'; g.fillRect(x + 4, yt + 10, bw - 8, h - 10); continue; } if (i % 2 === (v === 1 ? 1 : 0) || v === 3) { g.fillStyle = 'rgba(70,44,28,.9)'; g.fillRect(x + bw * 0.2, yt + h * 0.25, bw * 0.6, h * 0.75); win.push([x + bw * 0.2, yt + h * 0.25, bw * 0.6, h * 0.75]); g.strokeStyle = 'rgba(200,170,120,.4)'; g.lineWidth = 0.8; for (let xx = x + bw * 0.2 + 4; xx < x + bw * 0.8; xx += 4) { g.beginPath(); g.moveTo(xx, yt + h * 0.25); g.lineTo(xx, yb); g.stroke(); } } }
+      g.fillStyle = T.wood; for (let i = 0; i <= bays; i++) g.fillRect(-w + i * bw - 3.5, yt, 7, h);
+      g.fillRect(-w, yt, w * 2, 7); g.fillRect(-w, yt + h * 0.22, w * 2, 4);
+    } });
+    // brackets under the eaves
+    sh.piece(rect(-w - 6, yt + 2, w + 6, yt - 14), shade(T.wood, -0.1), { round: 1, lift: 1, paint: (g) => { g.fillStyle = 'rgba(240,230,210,.35)'; for (let x = -w; x < w; x += 14) g.fillRect(x, yt - 12, 8, 4); } });
+    const roof = (ww, y0, hh, ev, col, lf) => sh.piece(jroof(ww, y0, hh, ev, lf), col, { round: 2.4, rough: 0.7, lift: 2, paint: tileLines(col, ww, y0, hh) });
+    let ry;
+    if (T.two) {
+      roof(w + 6, yt - 12, h * 0.5, eave, T.tile, 10);
+      const w2 = w * 0.72, h2 = h * 0.7, y2 = yt - 12 - h * 0.42;
+      sh.piece(rect(-w2, y2, w2, y2 - h2), T.wall, { round: 1.2, lift: 1.2, paint: (g) => { g.fillStyle = T.wood; for (let x = -w2; x <= w2; x += w2 / 2) g.fillRect(x - 3, y2 - h2, 6, h2); g.fillRect(-w2, y2 - h2, w2 * 2, 6); g.fillStyle = 'rgba(70,44,28,.85)'; g.fillRect(-w2 * 0.3, y2 - h2 * 0.75, w2 * 0.6, h2 * 0.5); } });
+      sh.piece(rect(-w2 - 4, y2 - h2 + 2, w2 + 4, y2 - h2 - 10), shade(T.wood, -0.1), { round: 1, lift: 1 });
+      roof(w2 + 4, y2 - h2 - 8, h * 0.78, eave * 0.9, T.tile, 10); ry = y2 - h2 - 8 - h * 0.78;
+    } else { roof(w + 4, yt - 12, h * 0.9, eave, T.tile, 8); ry = yt - 12 - h * 0.9; }
+    const rw = (T.two ? w * 0.72 + 4 : w + 4) * 0.4;
+    sh.piece(rect(-rw - 4, ry + 4, rw + 4, ry - 8), shade(T.tile, -0.25), { round: 1.5, lift: 1.2 });
+    for (const s2 of [-1, 1]) sh.piece([[s2 * rw, ry + 4], [s2 * (rw + 4), ry - 20], [s2 * (rw - 6), ry - 12], [s2 * (rw - 8), ry - 4]], T.gold ? '#d4a838' : shade(T.tile, -0.3), { round: 2, lift: 1.2 });
+    return { spr: sh.finish({ shadowBlur: 7 }), windows: win };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+  glow: glowRects,
+};
+
+// A five-storey pagoda: five roofs, each a little smaller, and a bronze spire of nine rings.
+KINDS.gojunoto = {
+  bake(mk, v = 0) {
+    const r = rng(7100 + v), wood = v === 1 ? '#a8442e' : '#6a4e3a', wall = '#ece4d2', tile = '#55585c', sh = mk('gojunoto' + v, [-110, -560, 110, 6]);
+    sh.piece([[-58, 4], [-54, -16], [54, -16], [58, 4]], '#b0a894', { round: 2 });
+    let y = -16;
+    for (let k = 0; k < 5; k++) {
+      const w = 40 - k * 4.4, h = k ? 34 : 48, ev = 44 - k * 4;
+      sh.piece(rect(-w, y, w, y - h), wall, { round: 1.2, lift: 1.2, paint: (g) => { g.fillStyle = wood; g.fillRect(-w, y - h, 6, h); g.fillRect(w - 6, y - h, 6, h); g.fillRect(-w, y - h, w * 2, 5); g.fillStyle = 'rgba(60,40,26,.85)'; g.fillRect(-w * 0.35, y - h * 0.8, w * 0.7, h * 0.8); } });
+      y -= h;
+      sh.piece(rect(-w - 5, y + 2, w + 5, y - 10), shade(wood, -0.12), { round: 1, lift: 1 });
+      sh.piece(jroof(w + 6, y - 8, 22, ev, 12), tile, { round: 2.2, rough: 0.6, lift: 1.8, paint: tileLines(tile, w, y - 8, 22) });
+      y -= 30;
+    }
+    sh.piece(rect(-6, y + 4, 6, y - 10), '#7a7448', { round: 1, lift: 1 });
+    sh.piece(strip(0, y, 0, y - 120, 4, 3), '#7a7448', { round: 1, lift: 1.2, paint: (g) => { g.fillStyle = '#9a8e58'; for (let k = 0; k < 9; k++) { const yy = y - 12 - k * 9; g.fillRect(-9 + k * 0.3, yy, 18 - k * 0.6, 3.4); } } });
+    sh.piece(ellipse(0, y - 124, 5, 6, 10), '#9a8e58', { round: 2, lift: 1 });
+    return { spr: sh.finish({ shadowBlur: 7 }) };
+  },
+  draw(g, P, t, e, env) { g.rotate(Math.sin(t * 0.4 + e.a) * 0.25 * DEG); put(g, P.spr, env.sh, 4, 5); },
+};
+
+// A temple going up: posts, a tie beam, scaffolding poles, and a great beam hoisted on ropes (e.lift(t)).
+KINDS.tframe = {
+  bake(mk) {
+    const sh = mk('tframe', [-150, -300, 150, 6]), c = '#c8a070', P = {};
+    sh.piece([[-140, 4], [-136, -14], [136, -14], [140, 4]], '#b0a894', { round: 2 });
+    for (const x of [-110, -40, 40, 110]) sh.piece(strip(x, -14, x, -200, 13, 12), c, { round: 1.6, lift: 1, paint: (g) => { g.strokeStyle = 'rgba(120,80,40,.3)'; g.lineWidth = 0.8; for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(x - 4 + k * 1.6, -14); g.lineTo(x - 4 + k * 1.6, -200); g.stroke(); } } });
+    sh.piece(rect(-124, -186, 124, -200), shade(c, -0.05), { round: 1.5, lift: 1.4 });
+    for (const x of [-136, 136]) sh.piece(strip(x, 4, x * 0.98, -270, 4, 3), '#8a7a5a', { round: 1, lift: 0.8 });
+    for (const y of [-80, -160, -240]) sh.piece(strip(-136, y, 136, y - 2, 3, 3), '#8a7a5a', { round: 1, lift: 0.8 });
+    P.spr = sh.finish({ shadowBlur: 6 });
+    P.beam = mk('tframe-beam', [-130, -10, 130, 10]).piece(rect(-124, -8, 124, 8), c, { round: 2, paint: (g) => { g.fillStyle = 'rgba(60,40,20,.5)'; g.fillRect(-120, -8, 8, 16); g.fillRect(112, -8, 8, 16); } }).finish({ shadowBlur: 3 });
+    return P;
+  },
+  draw(g, P, t, e, env) {
+    put(g, P.spr, env.sh, 4, 5);
+    const k = e.lift ? e.lift(t) : 1, y = lerp(-20, -212, k);
+    g.strokeStyle = 'rgba(80,60,40,.8)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(-90, -276); g.lineTo(-90, y); g.moveTo(90, -276); g.lineTo(90, y); g.stroke();
+    g.save(); g.translate(0, y); g.rotate(Math.sin(t * 1.3) * 0.6 * DEG * (1 - k)); put(g, P.beam, env.sh, 3, 4); g.restore();
+  },
+};
+
+// Ise: a shrine in the oldest style. Raised on posts, plank walls, a thick thatched roof with crossed
+// rafter-ends and logs along the ridge. v0 weathered after twenty years; v1 new, in pale fresh cypress.
+KINDS.shinmei = {
+  bake(mk, v = 0) {
+    const r = rng(7200 + v), wood = v ? '#e4c890' : '#8a7a68', thatch = v ? '#b8a070' : '#6e6450', gold = v ? '#e0b444' : '#9a8450', sh = mk('shinmei' + v, [-130, -330, 130, 6]);
+    for (const x of [-80, -27, 27, 80]) sh.piece(strip(x, 4, x, -76, 10, 10), shade(wood, -0.06), { round: 1.4 });
+    sh.piece(rect(-104, -72, 104, -82), wood, { round: 1.2, lift: 1.2 });
+    for (let x = -100; x <= 100; x += 12.5) sh.piece(rect(x, -82, x + 2.6, -98), wood, { round: 0.5, lift: 0.8, thick: 0.6 });
+    sh.piece(rect(-102, -96, 102, -100), wood, { round: 0.6, lift: 1, thick: 0.6 });
+    sh.piece(rect(-78, -82, 78, -170), shade(wood, 0.06), { round: 1.2, lift: 1.2, paint: (g) => { g.strokeStyle = rgb(shade(wood, -0.3), 0.4); g.lineWidth = 1; for (let y = -88; y > -170; y -= 9) { g.beginPath(); g.moveTo(-78, y); g.lineTo(78, y); g.stroke(); } g.fillStyle = rgb(shade(wood, -0.5), 0.9); g.fillRect(-16, -160, 32, 76); g.fillStyle = gold; for (const [x, y] of [[-12, -140], [12, -140], [-12, -110], [12, -110]]) { g.beginPath(); g.arc(x, y, 2.4, 0, 7); g.fill(); } } });
+    sh.piece([[-128, -160], [-118, -184], [-50, -246], [50, -246], [118, -184], [128, -160], [80, -170], [-80, -170]], thatch, { round: 6, rough: 1, lift: 2.2, paint: (g) => { g.strokeStyle = rgb(shade(thatch, -0.3), 0.4); g.lineWidth = 1; for (let x = -126; x < 128; x += 3) { g.beginPath(); g.moveTo(x * 0.4, -244); g.lineTo(x, -166); g.stroke(); } g.fillStyle = rgb(shade(thatch, 0.25), 0.4); g.fillRect(-128, -170, 256, 4); } });
+    sh.piece(rect(-54, -244, 54, -256), shade(wood, -0.1), { round: 2, lift: 1.4 });
+    for (let k = 0; k < 7; k++) { const x = -45 + k * 15; sh.piece(ellipse(x, -262, 6.2, 7, 10), wood, { round: 2, lift: 1.4, paint: (g) => { g.fillStyle = gold; g.fillRect(x - 6, -266, 12, 2.4); } }); }
+    for (const s2 of [-1, 1]) sh.piece([[s2 * 50, -246], [s2 * 82, -318], [s2 * 74, -322], [s2 * 46, -252]], wood, { round: 0.6, lift: 1.6, paint: (g) => { g.fillStyle = gold; g.fillRect(s2 * 76 - 3, -312, 6, 3); } });
+    sh.piece(strip(110, 4, 84, -78, 9, 8), shade(wood, -0.08), { round: 1.2, lift: 1.2 });
+    return { spr: sh.finish({ shadowBlur: 7 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+};
+// The small hut that covers the sacred post on the empty plot beside the shrine.
+KINDS.kooiya = { bake(mk) { return { spr: mk('kooiya', [-30, -60, 30, 6]).piece([[-20, 4], [-20, -30], [0, -50], [20, -30], [20, 4]], '#a89a80', { round: 2, paint: (g) => { g.strokeStyle = 'rgba(60,50,40,.35)'; g.lineWidth = 0.8; for (let x = -18; x < 20; x += 4) { g.beginPath(); g.moveTo(x, 4); g.lineTo(x, -30); g.stroke(); } } }).finish({ shadowBlur: 3 }) }; }, draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 3); } };
+// A wooden fence of the shrine precinct.
+KINDS.mizugaki = { bake(mk, v = 0) { const sh = mk('mizugaki' + v, [-46, -80, 46, 6]); for (let x = -42; x < 44; x += 6) sh.piece([[x - 2.2, 4], [x + 2.2, 4], [x + 2.2, -66], [x, -72], [x - 2.2, -66]], v ? '#e0c48c' : '#8a7a68', { round: 0.8, lift: 0.6, thick: 0.6 }); sh.piece(rect(-46, -50, 46, -56), v ? '#d4b880' : '#7a6a58', { round: 1, lift: 1 }); return { spr: sh.finish({ shadowBlur: 3 }) }; }, draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 3); } };
+
+// A torii: v0 plain wood (shinmei), v1 vermilion with a curved top beam (myōjin), v2 vermilion in the sea.
+KINDS.torii = {
+  bake(mk, v = 0) {
+    const c = v ? '#c8402a' : '#9a8a70', cd = v ? '#2a2420' : shade(c, -0.1), sh = mk('torii' + v, [-120, -270, 120, 6]);
+    for (const s2 of [-1, 1]) sh.piece(strip(s2 * 70, 4, s2 * (v ? 64 : 70), -236, 16, 14), c, { round: 2, paint: (g) => { if (v) { g.fillStyle = '#2a2420'; g.fillRect(s2 * 70 - 9, -10, 18, 14); } } });
+    sh.piece(rect(-92, -188, 92, -200), c, { round: 1.4, lift: 1.2 });
+    if (v) sh.piece([[-112, -232], [-60, -238], [0, -240], [60, -238], [112, -232], [118, -250], [60, -252], [0, -254], [-60, -252], [-118, -250]], cd, { round: 2, lift: 1.6 }).piece([[-104, -222], [104, -222], [100, -234], [-100, -234]], c, { round: 1.4, lift: 1.4 });
+    else sh.piece([[-104, -228], [104, -228], [106, -244], [-106, -244]], c, { round: 2, lift: 1.6 });
+    if (v) sh.piece(rect(-7, -200, 7, -222), c, { round: 1, lift: 1 });
+    return { spr: sh.finish({ shadowBlur: 5 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 3, 4); },
+};
+
+// Scaffolding: a tower of poles with a platform near the top.
+KINDS.scaffold = {
+  bake(mk, v = 0) {
+    const h = v === 1 ? 420 : 300, sh = mk('scaffold' + v, [-60, -h - 20, 60, 6]), c = '#9a8462';
+    for (const x of [-46, 46]) sh.piece(strip(x, 4, x * 0.9, -h, 5, 4), c, { round: 1 });
+    for (let y = -40; y > -h; y -= 50) { sh.piece(strip(-48, y, 48, y, 3.4, 3.4), c, { round: 1, lift: 0.8 }); sh.piece(strip(-46, y, 44, y - 50, 2.4, 2.4), shade(c, -0.1), { round: 1, lift: 0.6 }); }
+    sh.piece(rect(-56, -h + 30, 56, -h + 20), '#7a6448', { round: 1, lift: 1.2 });
+    return { spr: sh.finish({ shadowBlur: 4 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 3, 4); },
+};
+
+// The Great Buddha of Tōdai-ji: seated on a lotus, one hand raised, under a golden halo.
+// e.eyes(t): 0 blind, 1 painted in; e.shine(t) a golden light from him.
+KINDS.daibutsu = {
+  bake(mk) {
+    const r = rng(7300), br = '#4e4a3c', brl = shade(br, 0.16), P = {};
+    const sh = mk('daibutsu', [-260, -520, 260, 8]);
+    // the halo, gold with small seated buddhas
+    sh.piece(ellipse(0, -330, 200, 190, 40), '#b8913a', { round: 10, paint: (g) => { g.strokeStyle = 'rgba(255,230,150,.45)'; g.lineWidth = 3; for (const rr of [150, 170, 186]) { g.beginPath(); g.arc(0, -330, rr, 0, 7); g.stroke(); } g.fillStyle = 'rgba(120,80,20,.5)'; for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, x = Math.cos(a) * 168, y = -330 + Math.sin(a) * 160; g.beginPath(); g.arc(x, y - 4, 4, 0, 7); g.fill(); g.beginPath(); g.ellipse(x, y + 5, 6, 5, 0, 0, 7); g.fill(); } } });
+    // the lotus throne
+    for (let k = 0; k < 9; k++) { const x = -200 + k * 50; sh.piece([[x - 26, 4], [x - 30, -30], [x, -60], [x + 30, -30], [x + 26, 4]], k % 2 ? '#5a5444' : '#625c4a', { round: 6, lift: 1, paint: (g) => { g.strokeStyle = 'rgba(200,180,120,.3)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, -54); g.lineTo(x, 0); g.stroke(); } }); }
+    // the body: crossed legs, robe, torso
+    sh.piece([[-210, -40], [210, -40], [200, -100], [140, -130], [-140, -130], [-200, -100]], br, { round: 20, lift: 1.6, paint: (g) => { g.strokeStyle = 'rgba(20,18,12,.35)'; g.lineWidth = 2; for (const k of [0, 1, 2, 3]) { g.beginPath(); g.moveTo(-180 + k * 30, -50); g.quadraticCurveTo(0, -110 + k * 6, 180 - k * 30, -50); g.stroke(); } } });
+    sh.piece([[-120, -120], [120, -120], [130, -230], [100, -300], [60, -320], [-60, -320], [-100, -300], [-130, -230]], br, { round: 16, lift: 1.6, paint: (g) => { const gr = g.createLinearGradient(-130, 0, 130, 0); gr.addColorStop(0, 'rgba(10,8,4,.35)'); gr.addColorStop(0.45, 'rgba(255,230,170,.12)'); gr.addColorStop(1, 'rgba(10,8,4,.4)'); g.fillStyle = gr; g.fillRect(-140, -330, 280, 220); g.strokeStyle = 'rgba(20,18,12,.4)'; g.lineWidth = 2; g.beginPath(); g.moveTo(-60, -318); g.quadraticCurveTo(-30, -220, 40, -140); g.stroke(); for (const k of [0, 1, 2]) { g.beginPath(); g.moveTo(-110 + k * 10, -250 + k * 30); g.quadraticCurveTo(-60, -200 + k * 30, -20, -160 + k * 20); g.stroke(); } } });
+    // hands: the right raised (fear not), the left open in the lap
+    sh.piece([[60, -210], [96, -250], [104, -300], [118, -306], [122, -250], [92, -200]], brl, { round: 8, lift: 1.4 });
+    sh.piece([[-120, -130], [-40, -120], [-20, -136], [-60, -150], [-118, -152]], brl, { round: 8, lift: 1.4 });
+    // the head: long ears, snail-shell curls, the urna
+    sh.piece([[-62, -320], [62, -320], [70, -360], [66, -420], [40, -452], [-40, -452], [-66, -420], [-70, -360]], brl, { round: 20, lift: 1.6, paint: (g) => { g.fillStyle = 'rgba(20,16,10,.45)'; g.beginPath(); g.ellipse(0, -364, 8, 3, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(20,16,10,.5)'; g.lineWidth = 2.4; for (const s2 of [-1, 1]) { g.beginPath(); g.moveTo(s2 * 16, -392); g.quadraticCurveTo(s2 * 30, -398, s2 * 44, -392); g.stroke(); g.beginPath(); g.moveTo(s2 * 8, -340); g.quadraticCurveTo(0, -335, 0, -335); g.stroke(); } g.beginPath(); g.moveTo(-14, -342); g.quadraticCurveTo(0, -334, 14, -342); g.stroke(); g.fillStyle = 'rgba(255,230,160,.6)'; g.beginPath(); g.arc(0, -410, 3.4, 0, 7); g.fill(); } });
+    for (const s2 of [-1, 1]) sh.piece([[s2 * 62, -410], [s2 * 82, -404], [s2 * 86, -330], [s2 * 74, -316], [s2 * 64, -340]], brl, { round: 6, lift: 1.2 });
+    sh.piece([[-60, -440], [-40, -470], [0, -490], [40, -470], [60, -440], [40, -450], [-40, -450]], shade(br, -0.15), { round: 12, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(120,110,80,.5)'; for (let y = -484; y < -444; y += 8) for (let x = -56; x < 58; x += 8) { if (Math.abs(x) > 60 - (y + 490) * 0.1 - (y < -476 ? 20 : 0)) continue; g.beginPath(); g.arc(x + ((y / 8) & 1) * 4, y, 3, 0, 7); g.fill(); } } });
+    P.spr = sh.finish({ shadowBlur: 9 });
+    return P;
+  },
+  draw(g, P, t, e, env) {
+    const sk = e.shine ? e.shine(t) : 0;
+    if (sk > 0.01) {
+      // rays from behind the halo, painted before him so he stands in front of them
+      g.save(); g.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 22; i++) { const a = (i / 22) * Math.PI * 2 + t * 0.04, len = 300 + 70 * Math.sin(t * 1.3 + i); g.strokeStyle = `rgba(255,226,150,${0.16 * sk})`; g.lineWidth = 12; g.beginPath(); g.moveTo(Math.cos(a) * 190, -330 + Math.sin(a) * 180); g.lineTo(Math.cos(a) * len * 1.25, -330 + Math.sin(a) * len * 1.2); g.stroke(); }
+      const gr = g.createRadialGradient(0, -330, 120, 0, -330, 420); gr.addColorStop(0, `rgba(255,214,140,${0.3 * sk})`); gr.addColorStop(1, 'rgba(255,190,100,0)'); g.fillStyle = gr; g.fillRect(-440, -760, 880, 800); g.restore();
+    }
+    put(g, P.spr, env.sh, 6, 7);
+    const k = e.eyes ? e.eyes(t) : 1;
+    // the eyelids are always there; the pupils are painted in
+    g.strokeStyle = 'rgba(20,16,10,.55)'; g.lineWidth = 2.4;
+    for (const s2 of [-1, 1]) { g.beginPath(); g.moveTo(s2 * 14, -384); g.quadraticCurveTo(s2 * 30, -378 + 2, s2 * 44, -384); g.stroke(); }
+    if (k > 0.01) { g.fillStyle = 'rgba(16,12,8,.9)'; for (const s2 of [-1, 1]) { g.beginPath(); g.ellipse(s2 * 29, -383, 6 * Math.min(1, k * 1.2), 2.6, 0, 0, 7); g.fill(); } }
+  },
+  glow(g, P, t, e, env, p) {
+    const k = e.shine ? e.shine(t) : 0; if (k < 0.01 || p < 0.6) return;
+    g.globalCompositeOperation = 'lighter';
+    const gr = g.createRadialGradient(0, -390, 0, 0, -390, 120); gr.addColorStop(0, `rgba(255,226,160,${0.22 * k})`); gr.addColorStop(1, 'rgba(255,200,120,0)'); g.fillStyle = gr; g.fillRect(-130, -520, 260, 260);
+    g.globalCompositeOperation = 'source-over';
+  },
+};
+
+// A low writing desk with paper, a stone and a brush rest.
+KINDS.jdesk = { bake(mk) { return { spr: mk('jdesk', [-46, -40, 46, 6]).piece(rect(-40, -26, 40, -32), '#5a3a28', { round: 1.5 }).piece(strip(-34, 4, -32, -26, 4, 4), '#4a2e20', { round: 1 }).piece(strip(34, 4, 32, -26, 4, 4), '#4a2e20', { round: 1 }).piece(rect(-30, -32, 18, -35), '#f2ead6', { round: 0.5, lift: 0.6, thick: 0.4 }).piece(rect(22, -32, 34, -38), '#2a2624', { round: 1, lift: 0.8 }).finish({ shadowBlur: 3 }) }; }, draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 3); } };
+
+// Two carpenters carrying a log of fresh cypress on their shoulders; e.move carries them, e.stop ends the walk.
+KINDS.logcarry = {
+  bake(mk, v = 0) { return { log: mk('logc' + v, [-90, -10, 90, 10]).piece([[-84, -7], [84, -8], [86, 7], [-86, 8]], '#e8cc94', { round: 4, paint: (g) => { g.strokeStyle = 'rgba(170,120,60,.4)'; g.lineWidth = 1; for (let y = -5; y < 7; y += 3) { g.beginPath(); g.moveTo(-84, y); g.lineTo(84, y); g.stroke(); } g.fillStyle = '#f4dca8'; g.beginPath(); g.ellipse(86, 0, 3, 7.4, 0, 0, 7); g.fill(); } }).finish({ shadowBlur: 3 }), a: puppet(mk, 'iseCarpW'), b: puppet(mk, 'iseCarpW2') }; },
+  draw(g, P, t, e, env) {
+    const walking = !e.stop || t < e.stop, ph = t * 4.6 + e.a;
+    for (const [x, pp, o] of [[-56, P.b, 1.7], [52, P.a, 0]]) { g.save(); g.translate(x, 0); drawPerson(g, pp, t, e, env, walking ? { walk: ph + o, lean: 6, head: -4, back: [Math.sin(ph + o) * 18, -14], front: [-150, -40] } : { lean: 2, head: -6, back: [8, -8], front: [-150, -40] }); g.restore(); }
+    g.save(); g.translate(0, -112 + (walking ? Math.abs(Math.cos(ph)) * 2 : 0)); put(g, P.log, env.sh, 2, 3); g.restore();
+  },
+};
+
+// A small gilt-bronze Buddha on a stand, with its halo: one of the first statues to come from Korea.
+KINDS.gilt = {
+  bake(mk) {
+    return { spr: mk('gilt', [-50, -130, 50, 6], { pad: 6 }).piece(ellipse(0, -76, 34, 40, 18), '#d8b04a', { round: 8, paint: (g) => { g.strokeStyle = 'rgba(255,240,180,.6)'; g.lineWidth = 1.6; g.beginPath(); g.arc(0, -76, 30, 0, 7); g.stroke(); } })
+      .piece([[-22, 4], [22, 4], [18, -10], [-18, -10]], '#a8803a', { round: 3, lift: 1 })
+      .piece([[-14, -10], [14, -10], [12, -56], [6, -64], [-6, -64], [-12, -56]], '#c89a3a', { round: 6, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(255,240,190,.35)'; g.fillRect(-12, -56, 8, 40); } })
+      .piece(ellipse(0, -72, 8, 9, 12), '#d4a840', { round: 4, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(80,50,10,.6)'; g.beginPath(); g.arc(0, -80, 5, Math.PI, 0); g.fill(); } })
+      .finish({ shadowBlur: 3 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 3); },
+  glow(g, P, t, e, env, p) { if (p < 0.6) return; g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(0, -70, 0, 0, -70, 70); gr.addColorStop(0, 'rgba(255,220,140,.3)'); gr.addColorStop(1, 'rgba(255,200,120,0)'); g.fillStyle = gr; g.fillRect(-70, -140, 140, 140); g.globalCompositeOperation = 'source-over'; },
+};

@@ -93,3 +93,44 @@ fxGroup(['doll0', 'doll1', 'doll2', 'doll3', 'doll4', 'doll5', 'kiku'], (mk) => 
   S.kiku = kk.finish({ shadowBlur: 4 });
   return S;
 });
+
+// ------------------------------------------------------------- brushed characters ---
+// Stroke by stroke, in a 100-unit box, in the order a calligrapher writes them.
+export const CHARS = {
+  wa: [[[34, 8], [16, 18]], [[8, 32], [44, 30]], [[27, 14], [27, 94]], [[26, 40], [8, 72]], [[29, 44], [42, 60]], [[56, 42], [57, 82]], [[56, 42], [88, 42], [86, 80]], [[58, 78], [86, 78]]],
+  hi: [[[30, 10], [30, 92]], [[30, 10], [72, 10], [72, 92]], [[32, 50], [70, 50]], [[32, 90], [70, 90]]],
+  hon: [[[10, 34], [90, 32]], [[50, 6], [50, 96]], [[48, 36], [12, 76]], [[52, 36], [90, 78]], [[34, 72], [66, 72]]],
+};
+// k counts strokes written so far (fractional: the last one is still being drawn).
+export function brush(g, name, x, y, s, k, col = '#1c1612', w = 7) {
+  const strokes = CHARS[name]; g.save(); g.translate(x, y); g.scale(s, s); g.lineCap = 'round'; g.lineJoin = 'round';
+  strokes.forEach((pts, i) => {
+    const f = Math.max(0, Math.min(1, k - i)); if (f <= 0) return;
+    let len = 0; const seg = []; for (let j = 1; j < pts.length; j++) { const d = Math.hypot(pts[j][0] - pts[j - 1][0], pts[j][1] - pts[j - 1][1]); seg.push(d); len += d; }
+    const n = Math.max(6, Math.round(len / 2.5)), upto = Math.round(n * f);
+    const at = (q) => { let d = q * len; for (let j = 0; j < seg.length; j++) { if (d <= seg[j] || j === seg.length - 1) { const u = Math.min(1, d / seg[j]); return [pts[j][0] + (pts[j + 1][0] - pts[j][0]) * u, pts[j][1] + (pts[j + 1][1] - pts[j][1]) * u]; } d -= seg[j]; } return pts[pts.length - 1]; };
+    for (let m = 0; m < upto; m++) {
+      const q0 = m / n, q1 = (m + 1) / n, [x0, y0] = at(q0), [x1, y1] = at(q1), press = (0.65 + 0.55 * Math.sin(Math.PI * Math.min(1, q0 * 1.15))) * (q0 < 0.08 ? 1.25 : 1);
+      g.strokeStyle = col; g.lineWidth = w * press; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+      if (q0 > 0.7) { g.strokeStyle = 'rgba(255,248,235,.18)'; g.lineWidth = w * press * 0.2; g.beginPath(); g.moveTo(x0 + 1.4, y0 + 1); g.lineTo(x1 + 1.4, y1 + 1); g.stroke(); }
+    }
+  });
+  g.restore();
+}
+
+fxGroup(['washi', 'letter', 'jointA', 'jointB', 'redsun', 'gilt'], (mk) => {
+  const r = rng(9300), S = {};
+  S.washi = mk('washi', [-130, -150, 130, 150], { pad: 8 }).piece([[-120, -140], [0, -144], [120, -140], [124, 0], [120, 142], [0, 146], [-122, 140], [-126, 0]], '#f4ecda', { round: 3, rough: 2, paint: (g) => { g.strokeStyle = 'rgba(180,160,120,.18)'; g.lineWidth = 0.8; for (let i = 0; i < 80; i++) { const x = -120 + r() * 240, y = -140 + r() * 280; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + (r() - 0.5) * 20, y + (r() - 0.5) * 10, x + (r() - 0.5) * 30, y + (r() - 0.5) * 16); g.stroke(); } g.fillStyle = 'rgba(200,170,90,.25)'; for (let i = 0; i < 40; i++) g.fillRect(-120 + r() * 240, -140 + r() * 280, 2 + r() * 3, 1.4 + r() * 2); } }).finish({ shadowBlur: 6 });
+  S.letter = mk('letter', [-170, -60, 170, 60], { pad: 8 }).piece(rect(-160, -50, 160, 50), '#efe4c6', { round: 2, rough: 0.6, paint: (g) => { brushColumns(g, r, 140, -40, 22, 6, 13, 14); } }).piece(ellipse(-162, 0, 7, 56, 12), '#8a5a2a', { round: 2, lift: 1.2 }).piece(ellipse(162, 0, 7, 56, 12), '#8a5a2a', { round: 2, lift: 1.2 }).finish({ shadowBlur: 5 });
+  const grain = (x0, x1, y0, y1) => (g) => { g.strokeStyle = 'rgba(140,96,50,.4)'; g.lineWidth = 1; for (let y = y0 + 3; y < y1; y += 4.4) { g.beginPath(); g.moveTo(x0, y); for (let x = x0; x <= x1; x += 12) g.lineTo(x, y + Math.sin(x * 0.05 + y) * 1.4); g.stroke(); } };
+  // two timbers that lock together without a nail: a mortise and its tenon
+  S.jointA = mk('jointA', [-150, -50, 20, 50], { pad: 6 }).piece([[-146, -40], [10, -40], [10, -14], [-30, -14], [-30, 14], [10, 14], [10, 40], [-146, 40]], '#d8b480', { round: 2, paint: grain(-146, 12, -40, 40) }).finish({ shadowBlur: 4 });
+  S.jointB = mk('jointB', [-34, -50, 150, 50], { pad: 6 }).piece([[-30, -12], [10, -12], [10, -40], [146, -40], [146, 40], [10, 40], [10, 12], [-30, 12]], '#c8a470', { round: 2, paint: grain(-30, 146, -40, 40) }).finish({ shadowBlur: 4 });
+  S.redsun = mk('redsun', [-140, -140, 140, 140], { pad: 10 }).piece(ellipse(0, 0, 130, 130, 48), '#d0402a', { round: 30, rough: 1.4, paint: (g) => { const gr = g.createRadialGradient(-30, -30, 0, 0, 0, 140); gr.addColorStop(0, 'rgba(255,200,140,.4)'); gr.addColorStop(1, 'rgba(120,20,10,.3)'); g.fillStyle = gr; g.fillRect(-140, -140, 280, 280); } }).finish({ shadowBlur: 8 });
+  S.gilt = mk('gilt', [-50, -130, 50, 6], { pad: 6 }).piece(ellipse(0, -76, 34, 40, 18), '#d8b04a', { round: 8, paint: (g) => { g.strokeStyle = 'rgba(255,240,180,.6)'; g.lineWidth = 1.6; g.beginPath(); g.arc(0, -76, 30, 0, 7); g.stroke(); } })
+    .piece([[-22, 4], [22, 4], [18, -10], [-18, -10]], '#a8803a', { round: 3, lift: 1 })
+    .piece([[-14, -10], [14, -10], [12, -56], [6, -64], [-6, -64], [-12, -56]], '#c89a3a', { round: 6, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(255,240,190,.35)'; g.fillRect(-12, -56, 8, 40); } })
+    .piece(ellipse(0, -72, 8, 9, 12), '#d4a840', { round: 4, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(80,50,10,.6)'; g.beginPath(); g.arc(0, -80, 5, Math.PI, 0); g.fill(); } })
+    .finish({ shadowBlur: 3 });
+  return S;
+});

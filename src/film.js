@@ -19,6 +19,8 @@ import { E, HOOK, ev, CAM, ZONES, SEAS, BUMPS, SKY, AMB, GRADE, MOTE, ERAS, WX, 
 import './ch01_jomon.js';
 import './ch02_yayoi.js';
 import './ch03_kofun.js';
+import './ch04_asuka.js';
+import './ch05_nara.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));
