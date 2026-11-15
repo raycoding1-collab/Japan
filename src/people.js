@@ -159,6 +159,7 @@ function bakeLook(mk, id, L) {
   if (L.collar) T.piece([[1, -40.5], [6.5, -41], [2.6, -24], [-0.6, -18], [-3, -22], [0.4, -30]], L.collar, { ...lite, round: 1, lift: 0.6, thick: 0.5 });
   if (L.obi) T.piece([[-15.4, -4], [15.6, -4], [15.4, -13], [-15.2, -13]], L.obi, { ...lite, round: 1, lift: 0.8, thick: 0.6, paint: (g) => { g.fillStyle = 'rgba(255,240,200,.25)'; g.fillRect(-16, -9.4, 32, 1); } });
   if (L.sword) T.piece(strip(-30, 14, 12, -6, 3.2, 2.8), '#1e1a1c', { ...lite, round: 1.2, lift: 1.2, paint: (g) => { g.fillStyle = 'rgba(200,170,90,.7)'; g.fillRect(-2, -1, 2, 6); } }).piece(strip(12, -6, 22, -11, 2.8, 2.6), '#e8e0cc', { ...lite, round: 1, lift: 1, paint: (g) => { g.strokeStyle = 'rgba(40,30,30,.8)'; g.lineWidth = 0.8; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(13 + k * 2.4, -9); g.lineTo(15 + k * 2.4, -5); g.stroke(); } } });
+  if (L.flag) T.piece(strip(-12, 10, -16, -120, 2.6, 2.2), '#3a2a20', { ...lite, round: 0.6, lift: 0.6 }).piece([[-16, -118], [-40, -114], [-40, -70], [-15, -72]], L.flag, { ...lite, round: 1, lift: 0.8, paint: (g) => { if (L.flagMark) { g.fillStyle = L.flagMark; g.beginPath(); g.arc(-28, -94, 6, 0, 7); g.fill(); } } });
   if (L.tattoo) T.stroke([[-8, -30], [-2, -26], [4, -30], [9, -26]], '#2a1a12', 1, 0.6).stroke([[-8, -24], [-2, -20], [4, -24], [9, -20]], '#2a1a12', 1, 0.6);
   if (L.apron) T.piece([[-2, 18], [16, 18], [15, -16], [3, -16]], L.apron, { ...lite, round: 2 });
   P.torso = T.finish({ shadowBlur: 3 });
@@ -200,6 +201,7 @@ function bakeLook(mk, id, L) {
   else if (L.hat === 'beret') Hd.piece([[-13, -20], [-12, -27], [-3, -31], [8, -30.4], [14, -26], [12, -22.6], [2, -24], [-8, -21.6]], hc, { ...lite, round: 4 }).piece([[0, -31], [1, -34], [2.6, -31]], hc, { ...lite, round: 0.6, lift: 0.6 });
   else if (L.hat === 'whitecap') Hd.piece([[-11.5, -18], [-12, -30], [-8, -34], [6, -34], [10, -30], [10.4, -19]], hc, { ...lite, round: 2.5 });
   else if (L.hat === 'topknot') Hd.piece(ellipse(-2, -30, 4.5, 4, 10), hairCol, { ...lite, round: 2 }).piece([[-6, -30.5], [2, -31.5], [2, -29.6], [-6, -28.8]], '#2a2420', { ...lite, round: 0.5, lift: 0.6 });
+  if (L.mask) Hd.piece([[-2, -2], [6, -2], [10.6, -8], [12, -14], [10.6, -22], [5, -26.6], [-2, -26]], L.mask, { ...lite, round: 3, lift: 0.8, paint: (g) => { g.fillStyle = 'rgba(30,20,20,.85)'; g.beginPath(); g.ellipse(6.6, -15.6, 1.4, 0.7, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(178,40,40,.8)'; g.beginPath(); g.ellipse(8.2, -7.4, 1.6, 0.8, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(40,30,30,.7)'; g.fillRect(2, -22, 6, 1); } });
   P.head = Hd.finish({ shadowBlur: 3 });
   // arms
   const sl = L.sleeve;

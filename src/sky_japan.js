@@ -161,3 +161,31 @@ fxGroup(['fujin'], (mk) => {
   S.fujin = sh.finish({ shadowBlur: 8 });
   return S;
 });
+
+// ---------------------------------------------------------------- Noh, and the tea bowl ---
+fxGroup(['nohmask', 'bowl'], (mk) => {
+  const r = rng(9500), S = {};
+  S.nohmask = mk('nohmask', [-80, -110, 80, 110], { pad: 8 }).piece(ellipse(0, 0, 66, 96, 30), '#f4eee2', { round: 20, paint: (g) => {
+    const gr = g.createRadialGradient(-10, -20, 0, 0, 0, 110); gr.addColorStop(0, 'rgba(255,255,250,.5)'); gr.addColorStop(1, 'rgba(200,180,150,.35)'); g.fillStyle = gr; g.fillRect(-70, -100, 140, 200);
+    g.fillStyle = '#1e1a1c'; g.beginPath(); g.moveTo(0, -96); g.quadraticCurveTo(-50, -96, -64, -40); g.quadraticCurveTo(-40, -70, 0, -72); g.quadraticCurveTo(40, -70, 64, -40); g.quadraticCurveTo(50, -96, 0, -96); g.fill();
+    g.strokeStyle = '#1e1a1c'; g.lineWidth = 0.8; for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(-2, -94); g.quadraticCurveTo(-30 - k * 4, -80, -50 - k * 2, -46); g.stroke(); g.beginPath(); g.moveTo(2, -94); g.quadraticCurveTo(30 + k * 4, -80, 50 + k * 2, -46); g.stroke(); }
+    g.fillStyle = 'rgba(60,50,50,.45)'; for (const s of [-1, 1]) { g.beginPath(); g.ellipse(s * 22, -58, 10, 5, 0, 0, 7); g.fill(); }
+    g.fillStyle = '#1e1a1c'; for (const s of [-1, 1]) { g.beginPath(); g.moveTo(s * 10, -22); g.quadraticCurveTo(s * 22, -27, s * 34, -22); g.quadraticCurveTo(s * 22, -19, s * 10, -22); g.fill(); }
+    g.fillStyle = 'rgba(220,180,170,.4)'; for (const s of [-1, 1]) { g.beginPath(); g.arc(s * 30, 12, 12, 0, 7); g.fill(); }
+    g.fillStyle = '#b8282a'; g.beginPath(); g.moveTo(-14, 46); g.quadraticCurveTo(0, 40, 14, 46); g.quadraticCurveTo(0, 56, -14, 46); g.fill(); g.fillStyle = '#1e1a1c'; g.fillRect(-8, 45, 16, 2);
+  } }).finish({ shadowBlur: 6 });
+  S.bowl = mk('bowl', [-130, -110, 130, 30], { pad: 10 }).piece([[-118, -96], [-104, -60], [-80, -26], [-40, -6], [-26, 4], [-28, 20], [28, 20], [26, 4], [40, -6], [80, -26], [104, -60], [118, -96]], '#9ab8a4', { round: 8, rough: 0.8, paint: (g) => {
+    const gr = g.createLinearGradient(-120, 0, 120, 0); gr.addColorStop(0, 'rgba(40,70,60,.35)'); gr.addColorStop(0.4, 'rgba(240,255,245,.25)'); gr.addColorStop(1, 'rgba(40,70,60,.4)'); g.fillStyle = gr; g.fillRect(-120, -100, 240, 124);
+    g.fillStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.ellipse(-50, -60, 14, 34, 0.5, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(60,90,80,.3)'; g.lineWidth = 0.6; for (let i = 0; i < 50; i++) { const x = -100 + r() * 200, y = -90 + r() * 80; g.beginPath(); g.moveTo(x, y); g.lineTo(x + r() * 8, y + r() * 5); g.stroke(); }
+  } }).piece(ellipse(0, -96, 118, 10, 30), '#86a894', { round: 4, lift: 0.8, paint: (g) => { g.fillStyle = 'rgba(30,50,40,.55)'; g.beginPath(); g.ellipse(0, -95, 110, 6.4, 0, 0, 7); g.fill(); } }).finish({ shadowBlur: 7 });
+  return S;
+});
+// The cracks of the bowl, the staples that held it, and the gold that mended it.
+export const BOWL_CRACKS = [[[-30, -96], [-24, -74], [-36, -54], [-22, -32], [-30, -8]], [[-24, -74], [-6, -62], [12, -68], [30, -50], [44, -44]], [[64, -94], [54, -66], [70, -42], [62, -26]]];
+export const STAPLES = [[-27, -84, 0.2], [-29, -44, -0.3], [2, -64, 1.4], [36, -48, 1.2], [58, -78, 0.4], [64, -50, -0.4]];
+export function bowlCracks(g, k, col = 'rgba(30,24,20,.85)', w = 2.2) {
+  g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = col; g.lineWidth = w;
+  for (const c of BOWL_CRACKS) { let len = 0; const seg = []; for (let i = 1; i < c.length; i++) { const d = Math.hypot(c[i][0] - c[i - 1][0], c[i][1] - c[i - 1][1]); seg.push(d); len += d; } let left = len * k; g.beginPath(); g.moveTo(...c[0]); for (let i = 1; i < c.length && left > 0; i++) { const f = Math.min(1, left / seg[i - 1]); g.lineTo(c[i - 1][0] + (c[i][0] - c[i - 1][0]) * f, c[i - 1][1] + (c[i][1] - c[i - 1][1]) * f); left -= seg[i - 1]; } g.stroke(); }
+  g.restore();
+}

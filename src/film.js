@@ -23,6 +23,8 @@ import './ch04_asuka.js';
 import './ch05_nara.js';
 import './ch06_heian.js';
 import './ch07_kamakura.js';
+import './ch08_muromachi.js';
+import './ch09_sengoku.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));
@@ -149,7 +151,7 @@ function seamPath(s) {
 }
 function seam(g, st, t, s, G) {
   if (t < s.t0 - 0.1 || G.c + st.visE + 6 < s.a0 || G.c - st.visE - 6 > s.a1) return;
-  const { pts, branches } = seamPath(s), open = sramp(t, s.t0, s.t0 + 1.2), gold = s.t1 ? sramp(t, s.t1, s.t1 + (s.dur || 2.5)) : 0;
+  const { pts, branches } = seamPath(s), open = sramp(t, s.t0, s.t0 + (s.openDur || 1.2)), gold = s.t1 ? sramp(t, s.t1, s.t1 + (s.dur || 2.5)) : 0;
   const n = pts.length - 1, shown = Math.max(1, Math.round(n * open));
   const line = (list, w, col, upto = 1) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); const m = Math.max(1, Math.round((list.length - 1) * upto)); for (let i = 0; i <= m; i++) { const [x, y] = G.rad(list[i][0], list[i][1]); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); };
   g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
@@ -158,7 +160,7 @@ function seam(g, st, t, s, G) {
   if (open > 0.6) for (const b of branches) line(b, 2.4 * (1 - gold * 0.2), 'rgba(24,14,8,.7)', clamp((open - 0.6) * 2.5));
   if (gold > 0) {
     // gold laid along it, from one end to the other, with a bright tip where the brush is
-    const gn = Math.max(1, Math.round(n * gold)), gpts = pts.slice(0, gn + 1);
+    const gn = Math.max(1, Math.round(n * gold)), gpts = s.rev ? pts.slice(n - gn).reverse() : pts.slice(0, gn + 1);
     line(gpts, 4.4, '#c9962e'); line(gpts, 2, '#f6d77a');
     for (const b of branches) if (gold > 0.5) { line(b, 2.6, '#c9962e', clamp((gold - 0.5) * 2)); line(b, 1.1, '#f6d77a', clamp((gold - 0.5) * 2)); }
     g.globalCompositeOperation = 'lighter';

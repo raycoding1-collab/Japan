@@ -878,3 +878,158 @@ KINDS.samurider = {
   bake(mk, v) { return KINDS.rider.bake(mk, v); },
   draw(g, P, t, e, env) { e.gait = t < (e.stopAt ?? 1e9) ? 'gallop' : 'stand'; KINDS.rider.draw(g, P, t, e, env); },
 };
+
+// ================================================================== Muromachi ===
+// The Golden Pavilion: a plain first floor of old wood and white plaster, two floors covered in gold leaf,
+// bark roofs, and a golden phoenix on the top.
+KINDS.kinkaku = {
+  bake(mk) {
+    const r = rng(7700), gold = '#d8a838', wood = '#5a4434', sh = mk('kinkaku', [-150, -440, 150, 8]);
+    const goldPaint = (x0, y0, x1, y1) => (g) => { const gr = g.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, 'rgba(120,80,10,.25)'); gr.addColorStop(0.4, 'rgba(255,246,190,.45)'); gr.addColorStop(1, 'rgba(120,80,10,.3)'); g.fillStyle = gr; g.fillRect(x0, y0, x1 - x0, y1 - y0); g.fillStyle = 'rgba(255,250,220,.35)'; for (let i = 0; i < 40; i++) g.fillRect(x0 + r() * (x1 - x0), y0 + r() * (y1 - y0), 3, 3); };
+    sh.piece(rect(-112, 6, 112, -6), '#8a8478', { round: 2 });
+    sh.piece(rect(-100, -6, 100, -90), '#ece6d8', { round: 1.2, lift: 1.2, paint: (g) => { g.fillStyle = wood; for (let x = -100; x <= 100; x += 40) g.fillRect(x - 3, -90, 6, 84); g.fillRect(-100, -90, 200, 6); g.fillRect(-100, -30, 200, 4); g.fillStyle = 'rgba(70,50,36,.85)'; for (let x = -88; x < 92; x += 40) g.fillRect(x, -84, 24, 50); } });
+    const rf = (w, y, h, ev2) => sh.piece(jroof(w, y, h, ev2, 6), '#4a3a30', { round: 2, rough: 0.6, lift: 1.8, paint: (g) => { g.strokeStyle = 'rgba(20,12,8,.35)'; g.lineWidth = 1; for (let k = 0; k < 5; k++) { g.beginPath(); g.moveTo(-w * 1.4, y - k * 5 - 2); g.lineTo(w * 1.4, y - k * 5 - 2); g.stroke(); } g.fillStyle = 'rgba(200,170,100,.4)'; g.fillRect(-w - ev2, y - 3, (w + ev2) * 2, 2); } });
+    rf(104, -96, 30, 26);
+    sh.piece(rect(-92, -110, 92, -196), gold, { round: 1.2, lift: 1.4, paint: (g) => { goldPaint(-92, -196, 92, -110)(g); g.fillStyle = 'rgba(120,80,20,.6)'; for (let x = -80; x < 84; x += 32) g.fillRect(x, -184, 20, 60); g.fillStyle = shade(gold, -0.2); g.fillRect(-92, -120, 184, 4); } });
+    for (let x = -100; x <= 100; x += 12) sh.piece(rect(x, -110, x + 2.6, -126), '#c89a30', { round: 0.4, lift: 0.8, thick: 0.4 });
+    sh.piece(rect(-102, -124, 102, -128), '#c89a30', { round: 0.4, lift: 1, thick: 0.5 });
+    rf(98, -202, 32, 26);
+    sh.piece(rect(-62, -218, 62, -290), gold, { round: 1.2, lift: 1.4, paint: (g) => { goldPaint(-62, -290, 62, -218)(g); g.fillStyle = 'rgba(110,70,16,.75)'; for (const x of [-34, 14]) { g.beginPath(); g.moveTo(x, -228); g.lineTo(x, -262); g.quadraticCurveTo(x + 10, -276, x + 20, -262); g.lineTo(x + 20, -228); g.fill(); } } });
+    sh.piece([[-104, -290], [-60, -330], [-10, -360], [10, -360], [60, -330], [104, -290], [70, -296], [-70, -296]], '#4a3a30', { round: 2.4, lift: 1.8, paint: (g) => { g.strokeStyle = 'rgba(20,12,8,.35)'; g.lineWidth = 1; for (let k = 0; k < 8; k++) { g.beginPath(); g.moveTo(-100 + k * 10, -292 - k * 8); g.lineTo(100 - k * 10, -292 - k * 8); g.stroke(); } } });
+    sh.piece([[-6, -360], [-10, -376], [-24, -386], [-8, -392], [0, -404], [6, -394], [24, -404], [12, -384], [8, -362]], gold, { round: 1.4, lift: 1.4, paint: goldPaint(-24, -404, 24, -360) });
+    return { spr: sh.finish({ shadowBlur: 7 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+  glow(g, P, t, e, env, p) { if (p < 0.6) return; const k = e.shine ? e.shine(t) : 0.5; g.globalCompositeOperation = 'lighter'; for (let i = 0; i < 3; i++) { const x = -60 + ((t * 30 + i * 70) % 160), gr = g.createLinearGradient(x - 20, 0, x + 20, 0); gr.addColorStop(0, 'rgba(255,240,180,0)'); gr.addColorStop(0.5, `rgba(255,240,180,${0.12 * k})`); gr.addColorStop(1, 'rgba(255,240,180,0)'); g.fillStyle = gr; g.fillRect(x - 20, -290, 40, 180); } g.globalCompositeOperation = 'source-over'; },
+};
+
+// A Noh stage: a raised floor of pale cypress under its own roof, the old pine painted on the back wall,
+// and the bridge along which the actors come on, with three small pines before it.
+KINDS.nohstage = {
+  bake(mk) {
+    const r = rng(7800), cyp = '#dcc89c', sh = mk('nohstage', [-300, -330, 170, 6]);
+    for (const x of [-120, 120]) sh.piece(strip(x, 4, x, -60, 10, 10), '#6a5040', { round: 1 });
+    sh.piece(rect(-140, -54, 150, -66), cyp, { round: 1.2, lift: 1.2 });
+    sh.piece(rect(-120, -66, 120, -250), '#c8a868', { round: 1, lift: 1, paint: (g) => { g.fillStyle = '#d8bc80'; g.fillRect(-120, -250, 240, 184); g.fillStyle = '#5a4434'; g.beginPath(); g.moveTo(-10, -66); g.quadraticCurveTo(-20, -140, 10, -190); g.lineTo(20, -186); g.quadraticCurveTo(0, -140, 12, -66); g.fill(); for (const [x, y, w] of [[-60, -170, 70], [50, -190, 64], [-10, -226, 60], [70, -140, 44], [-80, -120, 40]]) { g.fillStyle = 'rgba(40,80,50,.88)'; g.beginPath(); g.ellipse(x, y, w, 16, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(90,140,90,.5)'; g.beginPath(); g.ellipse(x - 8, y - 4, w * 0.6, 7, 0, 0, 7); g.fill(); } } });
+    for (const x of [-120, 120]) sh.piece(strip(x, -66, x, -258, 9, 9), '#6a5040', { round: 1, lift: 1.4 });
+    sh.piece(jroof(130, -256, 64, 30, 6), '#4a3a30', { round: 2, lift: 1.8, paint: (g) => { g.strokeStyle = 'rgba(20,12,8,.35)'; g.lineWidth = 1; for (let k = 0; k < 9; k++) { g.beginPath(); g.moveTo(-180, -258 - k * 7); g.lineTo(180, -258 - k * 7); g.stroke(); } } });
+    // the bridge, to the left
+    sh.piece(rect(-290, -50, -120, -60), cyp, { round: 1, lift: 1 });
+    for (let x = -286; x < -120; x += 14) sh.piece(rect(x, -60, x + 3, -84), '#7a6040', { round: 0.5, lift: 0.8, thick: 0.5 });
+    sh.piece(rect(-290, -82, -120, -86), '#7a6040', { round: 0.5, lift: 1, thick: 0.5 });
+    for (const x of [-280, -200]) sh.piece(strip(x, -50, x, -150, 6, 6), '#6a5040', { round: 1, lift: 1 });
+    sh.piece([[-300, -148], [-120, -152], [-110, -164], [-296, -162]], '#4a3a30', { round: 2, lift: 1.4 });
+    for (const [x, s] of [[-260, 0.8], [-200, 0.7], [-145, 0.6]]) { sh.piece(strip(x, 4, x + 2, -36 * s, 3, 2), '#5a4434', { round: 1, lift: 1 }); sh.piece(ellipse(x + 2, -40 * s, 18 * s, 10 * s, 10), '#3f5a44', { round: 4, lift: 1.2 }); }
+    return { spr: sh.finish({ shadowBlur: 6 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+};
+
+// A rock for a Zen garden, with moss at its foot.
+KINDS.zenrock = {
+  bake(mk, v = 0) {
+    const r = rng(7900 + v), w = [46, 30, 22][v % 3], h = [64, 40, 28][v % 3], sh = mk('zenrock' + v, [-w - 20, -h - 10, w + 20, 6]);
+    sh.piece([[-w - 16, 4], [-w - 6, -6], [w + 8, -6], [w + 16, 4]], '#5a7a4a', { round: 4, rough: 1.6 });
+    sh.piece([[-w, 2], [-w * 0.8, -h * 0.6], [-w * 0.3, -h], [w * 0.2, -h * 0.85], [w * 0.7, -h * 0.5], [w, 2]], '#7a766c', { round: 4, rough: 1.8, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(40,38,34,.4)'; g.lineWidth = 1.2; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(-w * 0.6 + i * 10, -h * 0.8 + i * 6); g.lineTo(-w * 0.3 + i * 12, -h * 0.2); g.stroke(); } g.fillStyle = 'rgba(200,196,186,.25)'; g.beginPath(); g.ellipse(-w * 0.3, -h * 0.75, w * 0.3, h * 0.12, -0.4, 0, 7); g.fill(); } });
+    return { spr: sh.finish({ shadowBlur: 4 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 3, 4); },
+};
+
+// A townhouse (machiya): v0 two storeys with a latticed front and an indigo curtain, v1 a low shop with
+// a deep eave, v2 a white-plastered storehouse. Windows glow with e.winOn(t). e.burn(t) chars it.
+KINDS.machiya = {
+  bake(mk, v = 0) {
+    const r = rng(8000 + v), sh = mk('machiya' + v, [-90, -200, 90, 6]), tile = '#4a4c52', wood = '#6a4e38', win = [];
+    if (v === 2) {
+      sh.piece(rect(-56, 4, 56, -126), '#efeae0', { round: 1.5, paint: (g) => { g.fillStyle = '#2a2a30'; g.fillRect(-56, -20, 112, 24); g.strokeStyle = 'rgba(240,240,240,.6)'; g.lineWidth = 1; for (let x = -56; x < 56; x += 8) { g.beginPath(); g.moveTo(x, -20); g.lineTo(x + 8, 4); g.stroke(); } g.fillStyle = '#2a2a30'; g.fillRect(-12, -100, 24, 24); } });
+      sh.piece(jroof(58, -124, 40, 14, 4), tile, { round: 2, lift: 1.6, paint: tileLines(tile, 58, -124, 40) });
+      return { spr: sh.finish({ shadowBlur: 5 }), windows: [[-12, -100, 24, 24]] };
+    }
+    const h1 = 76, h2 = v === 0 ? 56 : 0;
+    sh.piece(rect(-74, 4, 74, -h1), '#a88a62', { round: 1.2, paint: (g) => { g.fillStyle = 'rgba(40,26,18,.85)'; g.fillRect(-66, -h1 + 10, 132, h1 - 14); g.strokeStyle = wood; g.lineWidth = 2.2; for (let x = -64; x < 66; x += 5) { g.beginPath(); g.moveTo(x, -h1 + 10); g.lineTo(x, 0); g.stroke(); } } });
+    win.push([-66, -h1 + 10, 132, h1 - 14]);
+    sh.piece(rect(-14, -h1 + 10, 26, -h1 + 44), '#2a3a5a', { round: 1, lift: 0.8, paint: (g) => { g.fillStyle = '#efe8d8'; g.beginPath(); g.arc(6, -h1 + 26, 7, 0, 7); g.fill(); g.fillStyle = '#2a3a5a'; g.fillRect(5, -h1 + 10, 2, 34); } });
+    sh.piece(jroof(78, -h1, 22, 16, 4), tile, { round: 2, lift: 1.6, paint: tileLines(tile, 78, -h1, 22) });
+    if (h2) { sh.piece(rect(-66, -h1 - 18, 66, -h1 - 18 - h2), '#d8ccb4', { round: 1.2, lift: 1.2, paint: (g) => { g.fillStyle = 'rgba(40,26,18,.85)'; g.fillRect(-50, -h1 - 18 - h2 + 12, 100, 22); g.strokeStyle = '#d8ccb4'; g.lineWidth = 1.6; for (let x = -46; x < 50; x += 7) { g.beginPath(); g.moveTo(x, -h1 - h2 - 6); g.lineTo(x, -h1 - h2 + 16); g.stroke(); } } }); win.push([-50, -h1 - h2 - 6, 100, 22]); sh.piece(jroof(72, -h1 - 16 - h2, 30, 14, 6), tile, { round: 2, lift: 1.8, paint: tileLines(tile, 72, -h1 - 16 - h2, 30) }); }
+    return { spr: sh.finish({ shadowBlur: 5 }), windows: win };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 3, 4); const b = e.burn ? e.burn(t) : 0; if (b > 0.01) { g.save(); g.globalAlpha = 0.7 * b; g.globalCompositeOperation = 'multiply'; g.fillStyle = '#2a1410'; g.fillRect(-80, -190, 160, 196); g.restore(); } },
+  glow: glowRects,
+};
+
+// A stone lantern in the Kasuga style; e.lit(t) lights it.
+KINDS.toro = {
+  bake(mk) { return { spr: mk('toro', [-30, -130, 30, 6]).piece(rect(-20, 4, 20, -10), '#8a8478', { round: 2 }).piece(rect(-6, -10, 6, -60), '#8a8478', { round: 2, lift: 1 }).piece(rect(-16, -60, 16, -68), '#8a8478', { round: 2, lift: 1 }).piece(rect(-12, -68, 12, -94), '#8a8478', { round: 1.5, lift: 1, paint: (g) => { g.fillStyle = 'rgba(30,26,22,.9)'; g.fillRect(-6, -88, 12, 14); } }).piece([[-26, -92], [0, -110], [26, -92], [16, -96], [-16, -96]], '#7a766c', { round: 2, lift: 1.2 }).piece(ellipse(0, -114, 5, 6, 10), '#7a766c', { round: 2, lift: 1 }).finish({ shadowBlur: 3 }) }; },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 3); },
+  glow(g, P, t, e, env, p) { const k = e.lit ? e.lit(t) : 0; if (k < 0.01 || p < 0.6) return; g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(255,190,110,${0.8 * k})`; g.fillRect(-6, -88, 12, 14); const gr = g.createRadialGradient(0, -81, 0, 0, -81, 50); gr.addColorStop(0, `rgba(255,180,100,${0.35 * k})`); gr.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = gr; g.fillRect(-50, -131, 100, 100); g.globalCompositeOperation = 'source-over'; },
+};
+
+// ============================================================== Sengoku and Momoyama ===
+// Rikyū's tea hut, opened like a dollhouse: two mats, an alcove with a scroll and one flower, a kettle on
+// the hearth; mud walls, a thatched roof, a lattice window, and the low crawl-in door at its side.
+KINDS.teahut = {
+  bake(mk) {
+    const r = rng(8100), sh = mk('teahut', [-110, -230, 110, 6]);
+    sh.piece(rect(-84, 4, 84, -10), '#8a8478', { round: 2 });
+    sh.piece(rect(-80, -10, 80, -150), '#b8a07a', { round: 1.5, lift: 1, paint: (g) => { g.fillStyle = '#c8b088'; g.fillRect(-76, -146, 152, 136); g.fillStyle = 'rgba(140,110,70,.25)'; for (let i = 0; i < 40; i++) { g.beginPath(); g.arc(-74 + r() * 148, -144 + r() * 130, 1 + r() * 2, 0, 7); g.fill(); }
+      g.fillStyle = '#d8c8a0'; g.fillRect(14, -140, 52, 100); g.fillStyle = '#efe6d0'; g.fillRect(28, -132, 24, 60); g.fillStyle = 'rgba(30,22,18,.75)'; for (let k = 0; k < 6; k++) g.fillRect(32, -126 + k * 8, 16, 1.4);
+      g.strokeStyle = '#4a7a3a'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(40, -46); g.lineTo(40, -64); g.stroke(); g.fillStyle = '#e8e4f0'; g.beginPath(); g.arc(40, -66, 3, 0, 7); g.fill(); g.fillStyle = '#5a4030'; g.fillRect(34, -48, 12, 8);
+      g.fillStyle = 'rgba(40,30,22,.8)'; g.beginPath(); g.arc(-40, -96, 18, 0, 7); g.fill(); g.strokeStyle = 'rgba(200,180,140,.7)'; g.lineWidth = 1; for (let k = -16; k <= 16; k += 5) { g.beginPath(); g.moveTo(-40 + k, -112); g.lineTo(-40 + k, -80); g.stroke(); g.beginPath(); g.moveTo(-56, -96 + k); g.lineTo(-24, -96 + k); g.stroke(); }
+    } });
+    sh.piece(rect(-80, -10, 80, -16), '#a8b060', { round: 1, lift: 0.8, paint: (g) => { g.strokeStyle = 'rgba(60,70,30,.6)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -10); g.lineTo(0, -16); g.stroke(); } });
+    // the crawl-in door, on the side
+    sh.piece(rect(-104, -10, -80, -60), '#b8a07a', { round: 1, lift: 1, paint: (g) => { g.fillStyle = '#5a4430'; g.fillRect(-100, -48, 18, 34); g.strokeStyle = 'rgba(200,180,140,.5)'; g.lineWidth = 0.8; for (let y = -46; y < -14; y += 4) { g.beginPath(); g.moveTo(-100, y); g.lineTo(-82, y); g.stroke(); } } });
+    sh.piece([[-112, -136], [-60, -206], [60, -206], [112, -136], [80, -146], [-80, -146]], '#8a7a54', { round: 4, rough: 1.4, lift: 2, paint: (g) => { g.strokeStyle = 'rgba(60,50,30,.4)'; g.lineWidth = 1; for (let x = -110; x < 112; x += 3) { g.beginPath(); g.moveTo(x * 0.55, -204); g.lineTo(x, -140); g.stroke(); } } });
+    sh.piece(rect(-62, -204, 62, -214), '#6a5a3e', { round: 2, lift: 1.4 });
+    for (const x of [-80, 80]) sh.piece(strip(x, -10, x, -150, 6, 6), '#6a5040', { round: 1, lift: 1.2 });
+    return { spr: sh.finish({ shadowBlur: 6 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+};
+// A sword rack by the door, where samurai left their swords; e.has(t) hangs one on it.
+KINDS.katanakake = {
+  bake(mk) { return { rack: mk('katanakake', [-20, -70, 20, 6]).piece(strip(-14, 4, -14, -64, 3, 3), '#5a4030', { round: 1 }).piece(strip(14, 4, 14, -64, 3, 3), '#5a4030', { round: 1 }).piece(rect(-18, -40, 18, -44), '#5a4030', { round: 1, lift: 1 }).piece(rect(-18, -60, 18, -64), '#5a4030', { round: 1, lift: 1 }).finish({ shadowBlur: 2 }), sword: mk('katanakake-s', [-40, -6, 40, 6]).piece(strip(-36, 0, 34, -3, 3.4, 3), '#1e1a1c', { round: 1.2 }).piece(strip(20, -2, 36, -4, 3, 3), '#e8e0cc', { round: 1, lift: 0.8 }).finish({ shadowBlur: 2 }) }; },
+  draw(g, P, t, e, env) { put(g, P.rack, env.sh, 2, 2); const k = e.has ? e.has(t) : 0; if (k > 0.01) { g.save(); g.translate(0, -48 - (1 - k) * 20); g.globalAlpha = k; put(g, P.sword, env.sh, 1, 2); g.restore(); } },
+};
+// Hideyoshi's golden tea room: walls, ceiling and utensils of gold, with crimson felt on the floor.
+KINDS.goldroom = {
+  bake(mk) {
+    const r = rng(8200), gold = '#dcae3c', sh = mk('goldroom', [-100, -200, 100, 6]);
+    sh.piece(rect(-86, 4, 86, -10), '#8a6a2a', { round: 2 });
+    sh.piece(rect(-78, -10, 78, -150), gold, { round: 1.5, lift: 1, paint: (g) => { const gr = g.createLinearGradient(-78, 0, 78, 0); gr.addColorStop(0, 'rgba(140,90,10,.3)'); gr.addColorStop(0.5, 'rgba(255,250,200,.4)'); gr.addColorStop(1, 'rgba(140,90,10,.35)'); g.fillStyle = gr; g.fillRect(-78, -150, 156, 140); g.strokeStyle = 'rgba(140,90,20,.6)'; g.lineWidth = 1.4; for (let x = -78; x < 80; x += 26) { g.beginPath(); g.moveTo(x, -150); g.lineTo(x, -10); g.stroke(); } for (let y = -150; y < -10; y += 28) { g.beginPath(); g.moveTo(-78, y); g.lineTo(78, y); g.stroke(); } g.fillStyle = '#b8282a'; g.fillRect(-78, -24, 156, 14); g.fillStyle = gold; g.fillRect(36, -44, 18, 18); g.beginPath(); g.arc(14, -32, 7, 0, 7); g.fill(); } });
+    sh.piece([[-98, -146], [-50, -196], [50, -196], [98, -146], [70, -150], [-70, -150]], '#c89a30', { round: 3, lift: 2, paint: (g) => { g.fillStyle = 'rgba(255,250,210,.35)'; g.fillRect(-60, -190, 120, 10); } });
+    for (const x of [-78, 78]) sh.piece(strip(x, -10, x, -150, 6, 6), '#b88a24', { round: 1, lift: 1.2 });
+    return { spr: sh.finish({ shadowBlur: 6 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+  glow(g, P, t, e, env, p) { if (p < 0.6) return; g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(0, -80, 0, 0, -80, 220); gr.addColorStop(0, 'rgba(255,220,120,.35)'); gr.addColorStop(1, 'rgba(255,200,90,0)'); g.fillStyle = gr; g.fillRect(-220, -300, 440, 440); for (let i = 0; i < 5; i++) { const ph = (t * 0.5 + i * 0.2) % 1, x = -78 + ph * 156; g.fillStyle = `rgba(255,250,220,${0.25 * Math.sin(ph * Math.PI)})`; g.fillRect(x - 6, -150, 12, 140); } g.globalCompositeOperation = 'source-over'; },
+};
+// Himeji, the White Heron: a curved stone base, a white keep in five roofs with gables of every shape,
+// and golden fish on the ridge.
+KINDS.himeji = {
+  bake(mk) {
+    const r = rng(8300), sh = mk('himeji', [-220, -520, 220, 8]), tile = '#5a5e66', white = '#f4f2ec';
+    const base = []; for (let i = 0; i <= 10; i++) { const f = i / 10; base.push([-200 + f * 40 * f, -f * 130]); } for (let i = 10; i >= 0; i--) { const f = i / 10; base.push([200 - f * 40 * f, -f * 130]); }
+    sh.piece(base, '#8e887c', { round: 2, rough: 1, paint: (g) => { for (let y = 0; y > -130; y -= 10) for (let x = -200 + ((y / 10) & 1) * 9; x < 200; x += 18) { g.strokeStyle = 'rgba(50,46,40,.35)'; g.lineWidth = 1; g.strokeRect(x, y - 10, 18, 10); } } });
+    let y = -130;
+    for (let k = 0; k < 5; k++) {
+      const w = 150 - k * 22, h = k ? 46 : 70;
+      sh.piece(rect(-w, y, w, y - h), white, { round: 1.2, lift: 1.2, paint: (g) => { g.fillStyle = 'rgba(40,40,46,.85)'; for (let x = -w + 14; x < w - 10; x += 26) g.fillRect(x, y - h * 0.62, 10, h * 0.3); g.fillStyle = 'rgba(150,150,160,.25)'; g.fillRect(-w, y - 6, w * 2, 6); } });
+      y -= h;
+      sh.piece(jroof(w + 4, y + 4, 26, 26, 8), tile, { round: 2, lift: 1.8, paint: (g) => { tileLines(tile, w, y + 4, 26)(g); g.fillStyle = 'rgba(255,255,255,.55)'; g.fillRect(-w - 30, y + 1, (w + 30) * 2, 2.6); } });
+      // a triangular gable, and on alternate floors a curved one
+      const gx = (k % 2 ? -1 : 1) * w * 0.35; sh.piece([[gx - 30, y + 2], [gx, y - 30], [gx + 30, y + 2]], white, { round: 1.2, lift: 2, paint: (g) => { g.strokeStyle = tile; g.lineWidth = 4; g.beginPath(); g.moveTo(gx - 34, y + 4); g.lineTo(gx, y - 32); g.lineTo(gx + 34, y + 4); g.stroke(); } });
+      if (k === 1 || k === 3) sh.piece([[-26, y + 2], [-18, y - 14], [0, y - 22], [18, y - 14], [26, y + 2]], white, { round: 6, lift: 2.2, paint: (g) => { g.strokeStyle = tile; g.lineWidth = 4; g.beginPath(); g.moveTo(-30, y + 4); g.quadraticCurveTo(0, y - 34, 30, y + 4); g.stroke(); } });
+      y -= 20;
+    }
+    for (const s2 of [-1, 1]) sh.piece([[s2 * 40, y + 22], [s2 * 46, y + 2], [s2 * 54, y - 4], [s2 * 50, y + 10], [s2 * 56, y + 20]], '#d4a838', { round: 1.4, lift: 1.6 });
+    return { spr: sh.finish({ shadowBlur: 8 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 5, 6); },
+};
+// A rack of new matchlocks, filling one gun at a time (e.count(t)).
+KINDS.gunrack = {
+  bake(mk) { return { rack: mk('gunrack', [-80, -130, 80, 6]).piece(rect(-74, 4, 74, -8), '#5a4030', { round: 1.5 }).piece(rect(-74, -100, 74, -108), '#5a4030', { round: 1.5, lift: 1 }).piece(strip(-72, 4, -72, -110, 4, 4), '#4a3428', { round: 1 }).piece(strip(72, 4, 72, -110, 4, 4), '#4a3428', { round: 1 }).finish({ shadowBlur: 3 }), gun: KINDS.person ? mk('gunrack-g', [-5, -124, 6, 4], { pad: 4 }).piece(strip(0.5, -116, 0, 2, 2.4, 2.8), '#3a3438', { round: 0.6, thick: 0.7 }).piece([[-3, -10], [3.5, -10], [5, 2], [-2, 2]], '#6a4428', { round: 1.2, lift: 0.8 }).piece([[-2.6, -44], [3.2, -44], [3.4, -10], [-2.4, -10]], '#7a5030', { round: 1, lift: 0.8 }).finish({ shadowBlur: 2 }) : null }; },
+  draw(g, P, t, e, env) { put(g, P.rack, env.sh, 2, 3); const n = Math.floor(e.count ? e.count(t) : 10); for (let i = 0; i < n; i++) { g.save(); g.translate(-62 + i * 13.6, -6); g.rotate(-4 * DEG); put(g, P.gun, env.sh, 1, 2); g.restore(); } },
+};

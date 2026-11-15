@@ -19,10 +19,17 @@ prints, kaizen, the animators, the sushi masters.
 
 ## Status
 - [x] Template copied, tools installed (Playwright symlink, Kokoro venv in /home/user/tts), servers
-- [ ] Research + script + narration timing
-- [ ] Chapter 1 built and judged (desktop, phone, phone sideways)
-- [ ] All chapters built
+- [x] Research + script + narration timing (tools/layout.py lays out film.json's narration; 86 lines, 847 s)
+- [x] Chapter 1 built and judged (desktop, phone, phone sideways)
+- [ ] All chapters built: done ch1-7 (src/ch01..ch07); next ch08 Muromachi, ch09 Sengoku, ch10 Edo, ch11 Meiji, ch12 war, ch13 miracle, ch14 manga/anime, ch15 today, ch16 ending (kintsugi pull-back, SEAMS in film.js)
 - [ ] Light script (ERAS + WX) for every era
 - [ ] Score + ambience (shakuhachi, koto, shamisen, biwa, taiko, shō, temple bell)
 - [ ] Review rounds + full sweep + automated checks
 - [ ] Share image, icon, README, publish (GitHub Pages + TinyURL)
+
+## Architecture
+- `src/film_api.js`: shared tables (CAM, ZONES, SEAS, BUMPS, SKY/AMB/GRADE, ERAS, WX, NIGHTS, SUNS, ZOOM, FLOCKS, PAPER_SUN, MILKY, SEAMS) and helpers (add, hook, card, closeUp, drop...).
+- `src/chNN_*.js`: one module per chapter: its camera keys, ground, cut-outs, hooks, light and weather.
+- `src/film.js`: assembles them; ground, sky, weather (mist, fog, petals, maple, rain, ash, snowfall, embers, kasumi), seams (kintsugi cracks: open at t0, gold at t1).
+- `src/kinds_japan.js` (pre-modern cut-outs), `src/sky_japan.js` (cards; `brush()` writes kanji/kana stroke by stroke).
+- Events: film/film.json `events`, then `tools/narrate.py` regenerates src/timeline.js.
