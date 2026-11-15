@@ -87,11 +87,11 @@ grassRun(962, 998, 4.2, 'main', { skip: (a) => a > 965 && a < 999 });
 // ---- Sekigahara in the fog
 const T_FOG = ev('fog', 380.6), T_IEY = ev('ieyasu', 383.6), T_DEC = ev('decided', 385.8);
 const EAST = [[1003.6, 'ashiE'], [1006, 'ashiE2'], [1008.4, 'ashiE'], [1010.8, 'ashiE2']], WEST = [[1015.4, 'ashiW'], [1017.8, 'ashiW2'], [1020.2, 'ashiW'], [1022.6, 'ashiW2']];
-EAST.forEach(([a, v], i) => add('person', 'main', a, { v, z: 1.6 + (i % 2) * 0.2, scale: P2, popAt: T_FOG - 1 + i * 0.2, act: (t) => ({ head: -4, front: v === 'ashiE' ? [-92, -2] : [-34, -62], back: v === 'ashiE' ? [-70, -60] : [-20, -10] }) }));
+EAST.forEach(([a, v], i) => add('person', 'main', a, { v, z: 1.6 + (i % 2) * 0.2, scale: P2, popAt: T_FOG - 1 + i * 0.2, foldAt: 390.6 + i * 0.12, act: (t) => ({ head: -4, front: v === 'ashiE' ? [-92, -2] : [-34, -62], back: v === 'ashiE' ? [-70, -60] : [-20, -10] }) }));
 WEST.forEach(([a, v], i) => add('person', 'main', a, { v, z: 1.6 + (i % 2) * 0.2, scale: P2, flip: true, popAt: T_FOG - 0.6 + i * 0.2, foldAt: T_DEC + 0.2 + i * 0.22, act: (t) => ({ head: -4, front: v === 'ashiW2' ? [-92, -2] : [-34, -62], back: v === 'ashiW2' ? [-70, -60] : [-20, -10] }) }));
-add('person', 'main', 1000.2, { v: 'ieyasu', z: 1.4, scale: P2 * 1.05, popAt: T_IEY - 0.4, act: (t) => ({ head: -4, front: [-60 - sramp(t, T_DEC, T_DEC + 0.6) * 80, -10] }) });
-add('nobori', 'main', 997.6, { v: 2, z: 0.4, scale: 1, popAt: T_IEY - 0.2 }); add('kinsen', 'main', 1002, { z: 0.5, scale: 1, popAt: T_IEY });
-for (let a = 1004; a < 1030; a += 3.3) add('nobori', 'mid', a, { v: a < 1014 ? 2 : 1, scale: 0.5, popAt: T_FOG - 0.4, foldAt: a > 1014 ? T_DEC + (a - 1014) * 0.06 : undefined });
+add('person', 'main', 1000.2, { v: 'ieyasu', z: 1.4, scale: P2 * 1.05, popAt: T_IEY - 0.4, foldAt: 391.2, act: (t) => ({ head: -4, front: [-60 - sramp(t, T_DEC, T_DEC + 0.6) * 80, -10] }) });
+add('nobori', 'main', 997.6, { v: 2, z: 0.4, scale: 1, popAt: T_IEY - 0.2, foldAt: 391.4 }); add('kinsen', 'main', 1002, { z: 0.5, scale: 1, popAt: T_IEY, foldAt: 391.3 });
+for (let a = 1004; a < 1030; a += 3.3) add('nobori', 'mid', a, { v: a < 1014 ? 2 : 1, scale: 0.5, popAt: T_FOG - 0.4, foldAt: a > 1014 ? T_DEC + (a - 1014) * 0.06 : 391 + (a - 1004) * 0.05 });
 grassRun(998, 1034, 3.8, 'main', { skip: (a) => a > 999 && a < 1024 });
 grassRun(886, 1036, 7, 'front', { s: 2 });
 

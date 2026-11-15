@@ -25,6 +25,8 @@ import './ch06_heian.js';
 import './ch07_kamakura.js';
 import './ch08_muromachi.js';
 import './ch09_sengoku.js';
+import './ch10_edo.js';
+import './ch11_meiji.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));

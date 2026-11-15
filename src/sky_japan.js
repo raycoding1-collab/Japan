@@ -189,3 +189,66 @@ export function bowlCracks(g, k, col = 'rgba(30,24,20,.85)', w = 2.2) {
   for (const c of BOWL_CRACKS) { let len = 0; const seg = []; for (let i = 1; i < c.length; i++) { const d = Math.hypot(c[i][0] - c[i - 1][0], c[i][1] - c[i - 1][1]); seg.push(d); len += d; } let left = len * k; g.beginPath(); g.moveTo(...c[0]); for (let i = 1; i < c.length && left > 0; i++) { const f = Math.min(1, left / seg[i - 1]); g.lineTo(c[i - 1][0] + (c[i][0] - c[i - 1][0]) * f, c[i - 1][1] + (c[i][1] - c[i - 1][1]) * f); left -= seg[i - 1]; } g.stroke(); }
   g.restore();
 }
+
+// ---------------------------------------------------------------------- the Great Wave ---
+// One shape, used twice: for the giant cut-out wave, and for the print on the card, built colour by colour.
+// The crest curls over to the left, its lip breaking into claws of foam; a smaller wave rises on the right.
+export const WAVE_OUTER = [[320, 60], [320, -24], [240, -80], [160, -170], [90, -280], [30, -380], [-30, -450], [-90, -480], [-150, -470], [-200, -440], [-240, -392], [-252, -340]];
+export const WAVE_INNER = [[-218, -334], [-182, -362], [-132, -386], [-82, -380], [-42, -350], [-12, -300], [-2, -240], [-22, -170], [-72, -110], [-142, -70], [-232, -40], [-320, -22], [-320, 60]];
+export const WAVE_SMALL = [[150, 60], [160, -40], [200, -110], [236, -150], [262, -158], [286, -138], [300, -96], [320, -40], [320, 60]];
+export function wavePath(s = 1, ox = 0, oy = 0) { const p = new Path2D(); [...WAVE_OUTER, ...WAVE_INNER].forEach(([x, y], i) => (i ? p.lineTo(ox + x * s, oy + y * s) : p.moveTo(ox + x * s, oy + y * s))); p.closePath(); return p; }
+export function smallWavePath(s = 1, ox = 0, oy = 0) { const p = new Path2D(); WAVE_SMALL.forEach(([x, y], i) => (i ? p.lineTo(ox + x * s, oy + y * s) : p.moveTo(ox + x * s, oy + y * s))); p.closePath(); return p; }
+// claws of foam along the lip, from its tip back over the crest
+export function waveClaws(g, s, ox, oy, t = 0, col = '#f4f2ea', edge = '#2a4a7a') {
+  const lip = [[-252, -340], [-240, -392], [-200, -440], [-150, -470], [-90, -480], [-30, -450], [30, -380]];
+  g.save(); g.translate(ox, oy); g.scale(s, s);
+  for (let i = 0; i < lip.length - 1; i++) for (let k = 0; k < 4; k++) {
+    const f = k / 4, x = lip[i][0] + (lip[i + 1][0] - lip[i][0]) * f, y = lip[i][1] + (lip[i + 1][1] - lip[i][1]) * f, a = Math.atan2(lip[i + 1][1] - lip[i][1], lip[i + 1][0] - lip[i][0]) + Math.PI / 2 + Math.sin(t * 2 + i + k) * 0.08;
+    g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = col; g.strokeStyle = edge; g.lineWidth = 1.6; g.beginPath(); g.moveTo(-12, 0);
+    for (let j = 0; j < 4; j++) { const fx = -9 + j * 6; g.quadraticCurveTo(fx - 3, 16 + (j % 2) * 6, fx + 1, 26 + (j % 2) * 4); g.quadraticCurveTo(fx + 4, 14, fx + 3, 2); } g.lineTo(12, 0); g.closePath(); g.fill(); g.stroke(); g.restore();
+  }
+  g.restore();
+}
+fxGroup(['printcard', 'soba'], (mk) => {
+  const r = rng(9600), S = {};
+  S.printcard = mk('printcard', [-170, -120, 170, 120], { pad: 8 }).piece(rect(-160, -110, 160, 110), '#ede0c4', { round: 1.5, rough: 0.6, paint: (g) => { g.fillStyle = 'rgba(160,130,90,.12)'; for (let i = 0; i < 30; i++) { g.beginPath(); g.ellipse((r() - 0.5) * 300, (r() - 0.5) * 200, 8 + r() * 20, 4 + r() * 8, r(), 0, 7); g.fill(); } } }).finish({ shadowBlur: 6 });
+  S.soba = mk('soba', [-40, -40, 40, 10], { pad: 6 }).piece([[-34, -26], [34, -26], [24, 4], [-24, 4]], '#2a2226', { round: 4, paint: (g) => { g.fillStyle = '#b8282a'; g.fillRect(-30, -24, 60, 3); } }).piece(ellipse(0, -27, 33, 5, 18), '#8a6a3e', { round: 3, lift: 0.6, paint: (g) => { g.strokeStyle = 'rgba(230,210,170,.8)'; g.lineWidth = 1; for (let k = -26; k < 26; k += 4) { g.beginPath(); g.moveTo(k, -30); g.quadraticCurveTo(k + 3, -27, k, -24); g.stroke(); } } }).piece(strip(-30, -42, 30, -32, 2.4, 2.4), '#c8a070', { round: 1, lift: 1 }).piece(strip(-28, -46, 32, -36, 2.4, 2.4), '#c8a070', { round: 1, lift: 1 }).finish({ shadowBlur: 3 });
+  return S;
+});
+// The print, colour by colour: the key block's lines, then each colour block in turn (k counts blocks).
+export function wavePrint(g, k, t = 0) {
+  const s = 0.42, ox = 10, oy = 60, P = wavePath(s, ox, oy), Ps = smallWavePath(s, ox, oy);
+  g.save(); g.beginPath(); g.rect(-158, -108, 316, 216); g.clip();
+  if (k > 3) { g.globalAlpha = Math.min(1, k - 3); g.fillStyle = '#d6c7a6'; g.fillRect(-160, -110, 320, 50); g.fillStyle = '#8a8f98'; g.fillRect(-160, -110, 320, 16); g.globalAlpha = 1; }
+  if (k > 3) { g.globalAlpha = Math.min(1, k - 3); g.fillStyle = '#6e7c8c'; g.beginPath(); g.moveTo(40, 64); g.lineTo(62, 40); g.lineTo(70, 40); g.lineTo(92, 64); g.fill(); g.fillStyle = '#f4f2ea'; g.beginPath(); g.moveTo(58, 45); g.lineTo(62, 40); g.lineTo(70, 40); g.lineTo(74, 45); g.fill(); g.globalAlpha = 1; }
+  if (k > 1) { g.globalAlpha = Math.min(1, k - 1); g.fillStyle = '#9ab6c8'; g.fill(P); g.fill(Ps); g.globalAlpha = 1; }
+  if (k > 2) { g.globalAlpha = Math.min(1, k - 2); g.save(); g.clip(P); g.fillStyle = '#1f3e6e'; g.beginPath(); g.ellipse(ox - 60 * s, oy - 260 * s, 210 * s, 200 * s, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(200,220,235,.7)'; g.lineWidth = 1; for (let j = 0; j < 9; j++) { g.beginPath(); g.arc(ox - 70 * s, oy - 200 * s, (90 + j * 18) * s, 3.4, 5.9); g.stroke(); } g.restore(); g.globalAlpha = 1; }
+  if (k > 4) { g.globalAlpha = Math.min(1, k - 4); for (const [bx, by, a] of [[-110, 70, -0.2], [-20, 92, 0.1], [90, 84, -0.1]]) { g.save(); g.translate(bx, by); g.rotate(a); g.fillStyle = '#e8d090'; g.beginPath(); g.moveTo(-40, 0); g.quadraticCurveTo(0, 8, 42, -4); g.lineTo(38, 4); g.quadraticCurveTo(0, 12, -38, 6); g.closePath(); g.fill(); g.fillStyle = '#2a3a5a'; for (let j = 0; j < 6; j++) { g.beginPath(); g.arc(-26 + j * 10, -2, 3, 0, 7); g.fill(); } g.restore(); } g.globalAlpha = 1; }
+  if (k > 0) { g.globalAlpha = Math.min(1, k); g.strokeStyle = '#1e2430'; g.lineWidth = 1.4; g.stroke(P); g.stroke(Ps); waveClaws(g, s, ox, oy, t, k > 1 ? '#f4f2ea' : 'rgba(0,0,0,0)', '#1e2430'); g.globalAlpha = 1; }
+  g.restore();
+}
+
+// ------------------------------------------------------------------------ a map of Japan ---
+// Coastlines as [longitude, latitude] points, simplified by hand; drawn on a card, with places marked.
+export const JAPAN = {
+  honshu: [[130.9, 34.0], [132.0, 35.5], [133.5, 35.6], [135.5, 35.7], [136.0, 36.3], [136.8, 37.3], [137.2, 37.5], [138.5, 37.8], [139.0, 37.9], [139.8, 39.0], [140.0, 40.0], [140.3, 41.2], [141.4, 41.4], [141.5, 40.5], [142.0, 39.5], [141.0, 38.3], [141.0, 37.0], [140.8, 35.7], [140.0, 35.0], [139.2, 35.1], [138.8, 34.6], [138.2, 34.6], [137.0, 34.6], [136.8, 34.3], [136.0, 33.5], [135.2, 33.9], [135.2, 34.6], [134.0, 34.6], [133.0, 34.3], [132.0, 33.9], [131.0, 33.9]],
+  kyushu: [[130.9, 34.0], [131.7, 33.6], [131.9, 32.8], [131.4, 31.4], [130.6, 31.0], [130.2, 31.4], [130.2, 32.5], [129.7, 33.1], [129.6, 33.5], [130.4, 33.9]],
+  shikoku: [[132.4, 33.9], [133.6, 34.3], [134.6, 34.2], [134.7, 33.6], [134.2, 33.2], [133.0, 32.7], [132.5, 33.2]],
+  hokkaido: [[140.0, 41.5], [140.5, 42.8], [141.3, 43.3], [141.6, 45.4], [142.6, 44.6], [144.4, 43.9], [145.6, 43.4], [144.3, 42.9], [143.3, 42.0], [141.8, 42.6], [141.0, 41.8]],
+  okinawa: [[127.6, 26.1], [128.0, 26.6], [128.3, 26.8], [127.9, 26.4]],
+};
+export const PLACES = { nagasaki: [129.87, 32.75], edo: [139.7, 35.7], kyoto: [135.75, 35.0], hiroshima: [132.45, 34.4], tohoku: [141.4, 38.6] };
+export function japanMap(g, o = {}) {
+  const k = o.k ?? 20, cx = 136.5, cy = 36.5, X = (lon) => (lon - cx) * k, Y = (lat) => -(lat - cy) * k * 1.18;
+  g.save(); g.lineJoin = 'round';
+  for (const [name, pts] of Object.entries(JAPAN)) {
+    if (name === 'okinawa' && !o.okinawa) continue;
+    const hl = o.highlight && o.highlight[name] ? o.highlight[name] : 0;
+    g.beginPath(); pts.forEach(([lo, la], i) => (i ? g.lineTo(X(lo), Y(la)) : g.moveTo(X(lo), Y(la)))); g.closePath();
+    g.fillStyle = hl > 0 ? `rgb(${Math.round(184 + 16 * hl)},${Math.round(164 - 110 * hl)},${Math.round(122 - 90 * hl)})` : (o.land || '#b8a47a'); g.fill();
+    g.strokeStyle = 'rgba(60,44,30,.75)'; g.lineWidth = 1.4; g.stroke();
+  }
+  if (o.okinawa) { g.fillStyle = 'rgba(60,44,30,.6)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(X(124.2 + i * 0.6), Y(24.4 + i * 0.3), 1.6, 0, 7); g.fill(); } }
+  g.restore();
+  return { X, Y };
+}
