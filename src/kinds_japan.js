@@ -299,3 +299,195 @@ KINDS.sixpillar = {
   },
   draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
 };
+
+// =================================================================== the Yayoi ===
+// A plank-built boat with a high prow and stern, a mat sail, rowers and bales of rice.
+// v0 a Yayoi boat; v1 a larger ship from the mainland with monks aboard (see the chapters' looks).
+KINDS.yboat = {
+  bake(mk, v = 0) {
+    const r = rng(6200 + v), L = v === 1 ? 190 : 150, sh = mk('yboat' + v, [-L - 30, -230, L + 30, 10]);
+    sh.piece([[-L - 14, -66], [-L + 4, -56], [-L + 10, -30], [-L + 30, 2], [L - 30, 4], [L - 10, -30], [L + 2, -60], [L + 20, -74], [L + 16, -64], [L - 2, -46], [L - 22, -24], [-L + 26, -22], [-L + 6, -44]], v === 1 ? '#5a3a28' : '#6e4a30', { round: 4, paint: (g) => { g.strokeStyle = 'rgba(220,180,130,.3)'; g.lineWidth = 1.2; for (let y = -18; y < 2; y += 5) { g.beginPath(); g.moveTo(-L + 30, y); g.lineTo(L - 30, y); g.stroke(); } g.fillStyle = 'rgba(30,18,10,.5)'; for (let x = -L + 40; x < L - 30; x += 22) g.fillRect(x, -22, 2, 24); } });
+    sh.piece(strip(-10, -24, -6, -210, 4, 3), '#4a3423', { round: 1, lift: 1 });
+    sh.piece([[-58, -200], [44, -204], [40, -96], [-54, -92]], v === 1 ? '#c8b088' : '#b89a68', { round: 3, lift: 2, paint: (g) => { g.strokeStyle = 'rgba(90,60,30,.45)'; g.lineWidth = 1.4; for (let y = -190; y < -96; y += 12) { g.beginPath(); g.moveTo(-56, y); g.lineTo(42, y - 2); g.stroke(); } g.lineWidth = 0.7; for (let x = -52; x < 40; x += 5) { g.beginPath(); g.moveTo(x, -200); g.lineTo(x, -94); g.stroke(); } } });
+    if (v === 0) for (const [x, y] of [[40, -34], [62, -34], [51, -48], [-80, -34]]) sh.piece(ellipse(x, y, 13, 9, 12), '#d8c08a', { round: 3, lift: 1.2, paint: (g) => { g.strokeStyle = 'rgba(120,90,40,.6)'; g.lineWidth = 1; for (const dx of [-6, 0, 6]) { g.beginPath(); g.moveTo(x + dx, y - 8); g.lineTo(x + dx, y + 8); g.stroke(); } } });
+    return { spr: sh.finish({ shadowBlur: 5 }), rowers: v === 1 ? [puppet(mk, 'boatman'), puppet(mk, 'monkSail'), puppet(mk, 'monkSail2')] : [puppet(mk, 'yayoiRower'), puppet(mk, 'yayoiRower2')] };
+  },
+  draw(g, P, t, e, env) {
+    g.translate(0, Math.sin(t * 1.3 + e.a) * 2.6); g.rotate(Math.sin(t * 1.0 + e.a * 2) * 2 * DEG);
+    const st = e.stroke ? e.stroke(t) : 1, v = e.v || 0;
+    if (v === 1) { [[-110, 0], [-70, 1], [100, 2]].forEach(([x, i]) => { g.save(); g.translate(x, -22); const L = P.rowers[i].L; drawPerson(g, P.rowers[i], t, e, env, i === 0 ? { lean: 10 + Math.sin(t * 2.2) * 8 * st, head: 4, back: [-70 + Math.sin(t * 2.2) * 30 * st, -30], front: [-90 + Math.sin(t * 2.2) * 30 * st, -20] } : { lean: 2, head: -4 + Math.sin(t * 0.5 + i) * 3, back: [8, -8], front: i === 1 ? [-70, -60] : [-20, -20] }); g.restore(); }); }
+    else [[-60, 0, 0], [96, 1, 1.5]].forEach(([x, i, o]) => { const s = Math.sin(t * 2.4 + o) * st; g.save(); g.translate(x, -20); drawPerson(g, P.rowers[i], t, e, env, { lean: 12 + s * 8, head: 6, back: [-60 + s * 30, -30], front: [-90 + s * 40, -20] }); g.restore(); });
+    put(g, P.spr, env.sh, 3, 4);
+  },
+};
+
+// A dōtaku: a bronze bell with fins, cast in panels with little pictures, hung in a frame. e.ring(t) swings it.
+KINDS.dotaku = {
+  bake(mk) {
+    const r = rng(6300), P = {};
+    P.frame = mk('dotaku-f', [-70, -230, 70, 6]).piece(strip(-56, 4, -54, -220, 9, 8), '#5a4230', { round: 2 }).piece(strip(56, 4, 54, -220, 9, 8), '#5a4230', { round: 2 }).piece(rect(-66, -214, 66, -226), '#6a4e36', { round: 2, lift: 1.4 }).finish({ shadowBlur: 5 });
+    P.bell = mk('dotaku-b', [-52, -10, 52, 150]).piece([[-26, 4], [26, 4], [32, 30], [38, 140], [-38, 140], [-32, 30]], '#9a8a54', { round: 6, paint: (g) => {
+      const gr = g.createLinearGradient(-40, 0, 40, 0); gr.addColorStop(0, 'rgba(40,50,30,.35)'); gr.addColorStop(0.45, 'rgba(255,240,180,.25)'); gr.addColorStop(1, 'rgba(40,50,30,.4)'); g.fillStyle = gr; g.fillRect(-40, 0, 80, 142);
+      g.strokeStyle = 'rgba(60,60,36,.75)'; g.lineWidth = 1.6; for (const y of [40, 82, 124]) { g.beginPath(); g.moveTo(-36, y); g.lineTo(36, y); g.stroke(); } g.beginPath(); g.moveTo(0, 40); g.lineTo(0, 124); g.stroke();
+      g.lineWidth = 1.2; g.beginPath(); g.moveTo(-26, 72); g.lineTo(-18, 56); g.lineTo(-10, 72); g.moveTo(-18, 56); g.lineTo(-18, 50); g.stroke(); // a deer
+      g.beginPath(); g.moveTo(8, 108); g.quadraticCurveTo(18, 116, 30, 106); g.moveTo(14, 104); g.lineTo(14, 94); g.stroke(); // a boat
+      g.fillStyle = 'rgba(90,140,110,.25)'; for (let i = 0; i < 26; i++) { g.beginPath(); g.arc(-34 + r() * 68, 10 + r() * 128, 2 + r() * 4, 0, 7); g.fill(); }
+    } }).piece([[-30, 10], [-48, 40], [-46, 140], [-38, 140], [-34, 36]], '#8a7a48', { round: 2, lift: 0.8 }).piece([[30, 10], [48, 40], [46, 140], [38, 140], [34, 36]], '#8a7a48', { round: 2, lift: 0.8 })
+      .piece([[-24, 6], [-20, -6], [0, -10], [20, -6], [24, 6]], '#8a7a48', { round: 3, lift: 1, paint: (g) => { g.fillStyle = 'rgba(30,26,16,.8)'; g.beginPath(); g.ellipse(0, -1, 9, 4, 0, 0, 7); g.fill(); } })
+      .finish({ shadowBlur: 4 });
+    return P;
+  },
+  draw(g, P, t, e, env) {
+    put(g, P.frame, env.sh, 3, 4);
+    const k = e.ring ? e.ring(t) : 0; g.save(); g.translate(0, -212); g.rotate((Math.sin(t * 3.1) * 7 * k + Math.sin(t * 0.8 + e.a) * 0.8) * DEG); g.translate(0, 8); put(g, P.bell, env.sh, 2, 3); g.restore();
+  },
+};
+
+// A length of palisade: sharpened stakes, some leaning.
+KINDS.palisade = {
+  bake(mk, v = 0) {
+    const r = rng(6400 + v), sh = mk('palisade' + v, [-48, -100, 48, 6]);
+    for (let x = -44; x < 44; x += 7.5) { const h = 72 + r() * 18, c = r() < 0.5 ? '#7a5a3a' : '#6a4c32'; sh.piece([[x - 3.6, 4], [x + 3.6, 4], [x + 3.4, -h], [x, -h - 9], [x - 3.4, -h]], c, { round: 1, rough: 0.6, lift: 1 }); }
+    sh.piece(rect(-46, -34, 46, -40), '#5a4230', { round: 1, lift: 1.2 }); sh.piece(rect(-46, -60, 46, -66), '#5a4230', { round: 1, lift: 1.2 });
+    return { spr: sh.finish({ shadowBlur: 3 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 3); },
+};
+
+// A watchtower: four tall posts (two seen), a railed platform, a thatched hip roof.
+KINDS.yagura = {
+  bake(mk) {
+    const r = rng(6500), sh = mk('yagura', [-70, -330, 70, 6]);
+    for (const x of [-38, 38]) sh.piece(strip(x, 4, x * 0.82, -250, 9, 7), '#6a4c34', { round: 1.5 });
+    for (const y of [-80, -160]) { sh.piece(strip(-38, y, 32, y - 60, 3, 3), '#5a4030', { round: 1, lift: 0.8 }); sh.piece(strip(38, y, -32, y - 60, 3, 3), '#5a4030', { round: 1, lift: 0.8 }); }
+    sh.piece(rect(-50, -232, 50, -242), '#7a5a3e', { round: 1.5, lift: 1.4 });
+    for (let x = -44; x < 48; x += 11) sh.piece(rect(x, -242, x + 3, -262), '#6a4c34', { round: 0.6, lift: 0.8, thick: 0.6 });
+    sh.piece(rect(-47, -260, 47, -264), '#6a4c34', { round: 0.8, lift: 1, thick: 0.6 });
+    for (const x of [-40, 40]) sh.piece(strip(x, -242, x * 0.9, -276, 4, 4), '#6a4c34', { round: 1, lift: 1 });
+    sh.piece([[-66, -270], [-30, -312], [30, -312], [66, -270], [40, -274], [-40, -274]], '#a88e60', { round: 2.4, rough: 1.2, lift: 1.8, paint: (g) => { g.strokeStyle = 'rgba(90,66,36,.35)'; g.lineWidth = 1; for (let x = -64; x < 66; x += 3.4) { g.beginPath(); g.moveTo(x * 0.5, -310); g.lineTo(x, -272); g.stroke(); } } });
+    return { spr: sh.finish({ shadowBlur: 6 }) };
+  },
+  draw(g, P, t, e, env) { g.rotate(sway(t, e, 0.4, 0.3)); put(g, P.spr, env.sh, 4, 5); },
+};
+
+// A granary on stilts, with discs on the posts so rats cannot climb in, and a notched log for a ladder.
+KINDS.granary = {
+  bake(mk, v = 0) {
+    const r = rng(6600 + v), s = v === 1 ? 1.2 : 1, sh = mk('granary' + v, [-90 * s, -230 * s, 90 * s, 6]);
+    const S = (pts) => pts.map(([x, y]) => [x * s, y * s]);
+    for (const x of [-40, 40]) sh.piece(S(strip(x, 4, x, -80, 8, 7)), '#6a4c34', { round: 1.5 });
+    for (const x of [-40, 40]) sh.piece(S(ellipse(x, -58, 15, 4, 12)), '#7a5a3e', { round: 2, lift: 1 });
+    sh.piece(S(rect(-56, -78, 56, -88)), '#7a5a3e', { round: 1.5, lift: 1.2 });
+    sh.piece(S(rect(-48, -88, 48, -136)), '#9a7a52', { round: 1.5, lift: 1.2, paint: (g) => { g.strokeStyle = 'rgba(60,40,24,.4)'; g.lineWidth = 1.2; for (let y = -92; y > -136; y -= 7) { g.beginPath(); g.moveTo(-48 * s, y * s); g.lineTo(48 * s, y * s); g.stroke(); } g.fillStyle = 'rgba(30,18,10,.85)'; g.fillRect(-8 * s, -128 * s, 16 * s, 34 * s); } });
+    sh.piece(S([[-74, -124], [-84, -140], [-30, -212], [30, -212], [84, -140], [74, -124], [40, -134], [-40, -134]]), '#b0965e', { round: 2.4, rough: 1.2, lift: 2, paint: (g) => { g.strokeStyle = 'rgba(90,66,36,.35)'; g.lineWidth = 1; for (let x = -82; x < 84; x += 3.4) { g.beginPath(); g.moveTo(x * 0.36 * s, -210 * s); g.lineTo(x * s, -128 * s); g.stroke(); } } });
+    sh.piece(S([[-38, -208], [-50, -226], [-44, -228], [-30, -212]]), '#6a4c34', { round: 1, lift: 1 }).piece(S([[38, -208], [50, -226], [44, -228], [30, -212]]), '#6a4c34', { round: 1, lift: 1 });
+    sh.piece(S(strip(64, 4, 20, -84, 7, 6)), '#7a5a3a', { round: 1.4, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(30,18,10,.6)'; g.lineWidth = 2; for (let k = 1; k < 7; k++) { const x = (64 - k * 6.2) * s, y = -k * 12 * s; g.beginPath(); g.moveTo(x - 3, y); g.lineTo(x + 3, y + 2); g.stroke(); } } });
+    return { spr: sh.finish({ shadowBlur: 5 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 3, 4); },
+};
+
+// Himiko's palace: a great hall on posts under a steep thatched roof with crossed rafter-ends,
+// a veranda, and a bamboo blind behind which the queen sits, lit from within. e.lamp(t) lights her.
+const HIM_BLIND = [-46, -164, 92, 72];
+KINDS.himikohall = {
+  bake(mk) {
+    const r = rng(6700), sh = mk('himikohall', [-160, -360, 160, 6]);
+    for (const x of [-110, -55, 0, 55, 110]) sh.piece(strip(x, 4, x, -84, 11, 10), '#5e4230', { round: 2 });
+    sh.piece(rect(-132, -80, 132, -92), '#7a5a3e', { round: 1.5, lift: 1.4 });
+    sh.piece(rect(-112, -92, 112, -170), '#a88a62', { round: 1.5, lift: 1.2, paint: (g) => {
+      g.strokeStyle = 'rgba(60,40,24,.35)'; g.lineWidth = 1.2; for (let x = -110; x < 112; x += 9) { g.beginPath(); g.moveTo(x, -92); g.lineTo(x, -170); g.stroke(); }
+      const [bx, by, bw, bh] = HIM_BLIND; g.fillStyle = 'rgba(26,16,10,.95)'; g.fillRect(bx, by, bw, bh);
+      // the queen, seated, seen only as a shape
+      g.fillStyle = 'rgba(6,3,2,1)'; g.beginPath(); g.moveTo(-6, by + bh); g.lineTo(-10, by + 46); g.lineTo(-6, by + 30); g.lineTo(0, by + 24); g.arc(0, by + 18, 7, Math.PI * 0.6, Math.PI * 2.4); g.lineTo(6, by + 30); g.lineTo(12, by + 44); g.lineTo(26, by + bh); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(6,3,2,1)'; g.fillRect(-14, by + 8, 28, 3);
+    } });
+    sh.piece(rect(HIM_BLIND[0] - 4, HIM_BLIND[1] - 6, HIM_BLIND[0] + HIM_BLIND[2] + 4, HIM_BLIND[1] - 1), '#4a3420', { round: 1, lift: 0.8 });
+    for (let x = -138; x < 142; x += 14) sh.piece(rect(x, -92, x + 3, -106), '#5a4030', { round: 0.6, lift: 0.8, thick: 0.6 });
+    sh.piece(rect(-140, -104, 140, -108), '#5a4030', { round: 0.8, lift: 1, thick: 0.6 });
+    sh.piece([[-160, -160], [-150, -176], [-60, -300], [60, -300], [150, -176], [160, -160], [110, -168], [-110, -168]], '#9a8052', { round: 3, rough: 1.2, lift: 2.2, paint: (g) => { g.strokeStyle = 'rgba(80,58,30,.38)'; g.lineWidth = 1.1; for (let x = -158; x < 160; x += 3.2) { g.beginPath(); g.moveTo(x * 0.38, -298); g.lineTo(x, -166); g.stroke(); } g.strokeStyle = 'rgba(60,40,20,.45)'; g.lineWidth = 2; for (const y of [-200, -240]) { g.beginPath(); g.moveTo(-160 * (1 - (-y - 170) / 160), y); g.lineTo(160 * (1 - (-y - 170) / 160), y); g.stroke(); } } });
+    sh.piece(rect(-66, -296, 66, -310), '#6a4c34', { round: 2, lift: 1.4 });
+    for (const x of [-46, -16, 16, 46]) sh.piece(ellipse(x, -314, 10, 6, 10), '#7a5a3e', { round: 2, lift: 1.4 });
+    for (const s2 of [-1, 1]) sh.piece([[s2 * 58, -300], [s2 * 86, -352], [s2 * 80, -356], [s2 * 50, -306]], '#6a4c34', { round: 1, lift: 1.6 }).piece([[s2 * 62, -300], [s2 * 36, -350], [s2 * 42, -354], [s2 * 70, -306]], '#5e4230', { round: 1, lift: 1.6 });
+    sh.piece(strip(150, 4, 120, -86, 9, 8), '#7a5a3a', { round: 1.4, lift: 1.4 });
+    return { spr: sh.finish({ shadowBlur: 7 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+  glow(g, P, t, e, env, p) {
+    const k = e.lamp ? e.lamp(t) : 0; if (k < 0.01 || p < 0.6) return;
+    const [bx, by, bw, bh] = HIM_BLIND, f = 0.85 + 0.15 * fbm(t * 6, 5);
+    g.save(); g.beginPath(); g.rect(bx, by, bw, bh);
+    // cut her shape out of the light, so she stays a shadow
+    g.moveTo(-6, by + bh); g.lineTo(26, by + bh); g.lineTo(12, by + 44); g.lineTo(6, by + 30); g.arc(0, by + 18, 7, Math.PI * 2.4, Math.PI * 0.6, true); g.lineTo(-6, by + 30); g.lineTo(-10, by + 46); g.closePath();
+    g.clip('evenodd'); g.globalCompositeOperation = 'lighter';
+    for (let y = by + 2; y < by + bh; y += 4) { g.fillStyle = `rgba(255,${170 + ((y * 7) % 30)},90,${0.8 * k * f})`; g.fillRect(bx, y, bw, 2.4); }
+    g.restore(); g.globalCompositeOperation = 'lighter';
+    const gr = g.createRadialGradient(bx + bw / 2, by + bh / 2, 0, bx + bw / 2, by + bh / 2, 120); gr.addColorStop(0, `rgba(255,170,90,${0.22 * k * f})`); gr.addColorStop(1, 'rgba(255,150,70,0)'); g.fillStyle = gr; g.fillRect(bx - 120, by - 120, bw + 240, bh + 240);
+    g.globalCompositeOperation = 'source-over';
+  },
+};
+
+// ==================================================================== the Kofun ===
+// Haniwa: hollow figures of fired clay set out on the great tombs. v0 a plain cylinder, v1 a house,
+// v2 a horse in harness, v3 a warrior in armour, v4 a dancer with one arm raised, v5 another dancer.
+const TERRA = '#c47a4a', TERRA_D = '#a85e36';
+KINDS.haniwa = {
+  bake(mk, v = 0) {
+    const r = rng(6800 + v), hole = (g, x, y, rx, ry) => { g.fillStyle = 'rgba(30,14,8,.92)'; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill(); };
+    const tex = (g, x0, y0, x1, y1) => { g.strokeStyle = 'rgba(120,60,30,.25)'; g.lineWidth = 0.8; for (let y = y0; y < y1; y += 3) { g.beginPath(); g.moveTo(x0, y); g.lineTo(x1, y + (r() - 0.5)); g.stroke(); } };
+    if (v === 0) return { spr: mk('haniwa0', [-24, -76, 24, 6]).piece([[-17, 4], [17, 4], [16, -70], [-16, -70]], TERRA, { round: 3, paint: (g) => { tex(g, -17, -70, 17, 4); for (const y of [-24, -48]) { g.fillStyle = 'rgba(255,200,160,.25)'; g.fillRect(-17, y - 2, 34, 4); g.fillStyle = 'rgba(90,40,20,.3)'; g.fillRect(-17, y + 2, 34, 1.5); } hole(g, 0, -36, 4.5, 4.5); g.fillStyle = 'rgba(40,18,10,.85)'; g.beginPath(); g.ellipse(0, -70, 15, 3, 0, 0, 7); g.fill(); } }).finish({ shadowBlur: 3 }) };
+    if (v === 1) {
+      const sh = mk('haniwa1', [-60, -130, 60, 6]);
+      sh.piece([[-30, 4], [30, 4], [30, -16], [-30, -16]], TERRA_D, { round: 2, paint: (g) => tex(g, -30, -16, 30, 4) });
+      sh.piece(rect(-40, -16, 40, -64), TERRA, { round: 2, lift: 1.2, paint: (g) => { tex(g, -40, -64, 40, -16); hole(g, -16, -40, 7, 11); hole(g, 18, -40, 7, 11); } });
+      sh.piece([[-56, -60], [-38, -112], [38, -112], [56, -60], [30, -66], [-30, -66]], shade(TERRA, -0.05), { round: 2.4, lift: 1.6, paint: (g) => { g.strokeStyle = 'rgba(110,50,24,.5)'; g.lineWidth = 1.2; for (let x = -52; x < 56; x += 6) { g.beginPath(); g.moveTo(x * 0.7, -110); g.lineTo(x, -64); g.stroke(); } } });
+      sh.piece([[-46, -110], [-52, -124], [52, -124], [46, -110]], TERRA_D, { round: 2, lift: 1.2 });
+      return { spr: sh.finish({ shadowBlur: 4 }) };
+    }
+    if (v === 2) {
+      const sh = mk('haniwa2', [-80, -140, 80, 6]);
+      for (const [x, c] of [[-46, TERRA_D], [36, TERRA_D], [-34, TERRA], [48, TERRA]]) sh.piece([[x - 9, 4], [x + 9, 4], [x + 8, -54], [x - 8, -54]], c, { round: 3, paint: (g) => tex(g, x - 9, -54, x + 9, 4) });
+      sh.piece([[-60, -50], [-56, -82], [-20, -92], [36, -92], [56, -80], [58, -52], [-54, -46]], TERRA, { round: 10, lift: 1.4, paint: (g) => { tex(g, -60, -92, 58, -46); g.fillStyle = '#9a4a28'; g.fillRect(-26, -94, 34, 18); g.fillStyle = 'rgba(255,210,170,.4)'; for (let x = -50; x < 52; x += 12) { g.beginPath(); g.arc(x, -54, 3.4, 0, 7); g.fill(); } } });
+      sh.piece([[40, -88], [52, -122], [70, -132], [80, -118], [66, -104], [58, -82]], TERRA, { round: 6, lift: 1.6, paint: (g) => { hole(g, 68, -122, 2.6, 2.6); g.fillStyle = 'rgba(255,210,170,.35)'; g.fillRect(48, -112, 16, 3); } });
+      sh.piece([[52, -122], [56, -138], [62, -126]], TERRA_D, { round: 1, lift: 1 });
+      sh.piece([[-58, -78], [-70, -52], [-64, -50], [-54, -70]], TERRA_D, { round: 2, lift: 1 });
+      return { spr: sh.finish({ shadowBlur: 4 }) };
+    }
+    if (v === 3) {
+      const sh = mk('haniwa3', [-40, -160, 40, 6]);
+      sh.piece([[-18, 4], [18, 4], [16, -50], [-16, -50]], TERRA_D, { round: 3, paint: (g) => tex(g, -18, -50, 18, 4) });
+      sh.piece([[-22, -46], [22, -46], [26, -70], [24, -100], [-24, -100], [-26, -70]], TERRA, { round: 4, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(110,50,24,.55)'; g.lineWidth = 1.2; for (let y = -96; y < -50; y += 6) { g.beginPath(); g.moveTo(-24, y); g.lineTo(24, y); g.stroke(); for (let x = -22 + ((y / 6) & 1) * 4; x < 24; x += 8) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 6); g.stroke(); } } } });
+      sh.piece([[-14, -98], [14, -98], [14, -126], [-14, -126]], TERRA, { round: 6, lift: 1.4, paint: (g) => { hole(g, -6, -114, 3, 2); hole(g, 6, -114, 3, 2); hole(g, 0, -104, 3.4, 1.8); } });
+      sh.piece([[-26, -122], [-18, -140], [0, -148], [18, -140], [26, -122], [16, -124], [-16, -124]], shade(TERRA, -0.08), { round: 3, lift: 1.6 });
+      sh.piece(strip(18, -86, 32, -60, 7, 6), TERRA, { round: 2, lift: 1.4 }); sh.piece(strip(-18, -90, 8, -66, 7, 6), TERRA, { round: 2, lift: 1.6 });
+      sh.piece(strip(6, -66, 34, -40, 4, 3), '#8a4a2a', { round: 1, lift: 1.4 });
+      return { spr: sh.finish({ shadowBlur: 4 }) };
+    }
+    const flipArm = v === 5, sh = mk('haniwa' + v, [-46, -140, 46, 6]);
+    sh.piece([[-16, 4], [16, 4], [14, -60], [16, -86], [-16, -86], [-14, -60]], TERRA, { round: 6, paint: (g) => { tex(g, -16, -86, 16, 4); g.fillStyle = 'rgba(255,200,160,.2)'; g.fillRect(-16, -40, 32, 3); } });
+    sh.piece(ellipse(0, -104, 15, 18, 14), TERRA, { round: 6, lift: 1.4, paint: (g) => { hole(g, -6, -108, 3.2, 2.4); hole(g, 6, -108, 3.2, 2.4); hole(g, 0, -96, 3.6, 3); } });
+    sh.piece(strip(flipArm ? -14 : 14, -78, flipArm ? -34 : 34, -122, 7, 5.6), TERRA, { round: 3, lift: 1.4 });
+    sh.piece(strip(flipArm ? 14 : -14, -78, flipArm ? 30 : -30, -52, 7, 5.6), TERRA_D, { round: 3, lift: 1.2 });
+    return { spr: sh.finish({ shadowBlur: 4 }) };
+  },
+  draw(g, P, t, e, env) { const d = e.dance ? e.dance(t) : 0; g.rotate((Math.sin(t * 2.4 + e.a) * 4 * d + Math.sin(t * 0.6 + e.a) * 0.4) * DEG); put(g, P.spr, env.sh, 2, 3); },
+};
+
+// A keyhole tomb seen from the side: a terraced round mound and its lower square front, wooded,
+// with stone-faced slopes and rows of haniwa on the terraces.
+KINDS.kofun = {
+  bake(mk) {
+    const r = rng(6900), sh = mk('kofun', [-300, -280, 300, 8]);
+    const trees = (g, x0, x1, ytop, n) => { for (let i = 0; i < n; i++) { const x = x0 + r() * (x1 - x0), y = ytop + r() * 30, s2 = 7 + r() * 9; g.fillStyle = r() < 0.5 ? 'rgba(36,64,38,.75)' : 'rgba(84,124,66,.6)'; g.beginPath(); g.ellipse(x, y, s2, s2 * 0.8, 0, 0, 7); g.fill(); } };
+    const stones = (g, x0, x1, y0, y1) => { g.fillStyle = 'rgba(176,170,152,.55)'; for (let i = 0; i < 90; i++) { const x = x0 + r() * (x1 - x0), y = y0 + r() * (y1 - y0); g.beginPath(); g.ellipse(x, y, 2 + r() * 1.6, 1.2 + r() * 0.8, 0, 0, 7); g.fill(); } };
+    // the square front part (left), lower, in three steps; then the round part (right), higher, in three steps
+    const steps = (xL, xR, h, col, lift, k, dome) => {
+      const yTop = -h, inset = 26, top = []; for (let i = 0; i <= 10; i++) top.push([lerp(xL + inset, xR - inset, i / 10), yTop + (dome ? 26 * (1 - Math.sin(i / 10 * Math.PI)) : 0)]);
+      sh.piece([[xL, 6], ...top, [xR, 6]], col, { round: 8, rough: 1.2, seg: 20, lift, paint: (g) => { const gr = g.createLinearGradient(0, yTop, 0, 6); gr.addColorStop(0, rgb(shade(col, 0.12))); gr.addColorStop(1, rgb(shade(col, -0.15))); g.fillStyle = gr; g.fillRect(xL, yTop - 6, xR - xL, -yTop + 14); stones(g, xL, xR, yTop + 18, 6); trees(g, xL + inset, xR - inset, yTop - 14, 30 + k * 10); g.fillStyle = 'rgba(210,140,90,.85)'; for (let x = xL + inset + 4; x < xR - inset; x += 7) g.fillRect(x, yTop - 1, 2.4, 4); } });
+    };
+    steps(-296, 20, 70, '#4e6a44', 1, 0); steps(-270, 0, 120, '#56744a', 1.4, 1); steps(-244, -26, 160, '#5e7e50', 1.8, 2);
+    steps(-60, 296, 92, '#4e6a44', 1, 0, 1); steps(-30, 268, 168, '#56744a', 1.4, 1, 1); steps(4, 238, 236, '#5e7e50', 1.8, 2, 1);
+    return { spr: sh.finish({ shadowBlur: 8 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh * 0.5, 4, 5); },
+};

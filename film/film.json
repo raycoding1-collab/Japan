@@ -434,6 +434,26 @@
   "thousand": 35.4,
   "flamepot": 40.6,
   "dogu": 42.4,
-  "goggle": 43.9
+  "goggle": 43.9,
+  "bronze": 52.0,
+  "iron": 52.9,
+  "moat": 55.8,
+  "towers": 57.0,
+  "granary": 59.2,
+  "chronicle": 63.4,
+  "himiko": 64.8,
+  "sorcery": 67.2,
+  "seal": 72.6,
+  "mirrors": 74.0,
+  "kofun": 80.6,
+  "keyhole": 82.4,
+  "moats": 84.8,
+  "hClay": 88.6,
+  "hHouse": 91.0,
+  "hHorse": 91.7,
+  "hWarrior": 92.5,
+  "hDancers": 93.3,
+  "imperial": 96.4,
+  "monarchy": 100.6
  }
 }

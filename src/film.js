@@ -17,6 +17,8 @@ import { BlurSheet } from './engine.js';
 import { DURATION } from './timeline.js';
 import { E, HOOK, ev, CAM, ZONES, SEAS, BUMPS, SKY, AMB, GRADE, MOTE, ERAS, WX, NIGHTS, SUNS, ZOOM, FLOCKS, PAPER_SUN, MILKY, SEAMS, W_ } from './film_api.js';
 import './ch01_jomon.js';
+import './ch02_yayoi.js';
+import './ch03_kofun.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));
