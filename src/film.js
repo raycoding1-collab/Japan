@@ -11,6 +11,7 @@ import './kinds_modern.js';
 import './kinds_china.js';
 import './kinds_modern_china.js';
 import './kinds_japan.js';
+import './kinds_modern_japan.js';
 import { makeFx } from './sky_china.js';
 import './sky_japan.js';
 import { BlurSheet } from './engine.js';
