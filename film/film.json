@@ -1,0 +1,439 @@
+{
+ "name": "film",
+ "duration": 847,
+ "voice": {
+  "blend": {
+   "bm_lewis": 0.55,
+   "bm_george": 0.45
+  },
+  "speed": 0.91,
+  "lang": "en-gb",
+  "pitch": -1
+ },
+ "chapters": [
+  {
+   "t": 0,
+   "title": "Clay and fire"
+  },
+  {
+   "t": 46.2,
+   "title": "Rice and mirrors"
+  },
+  {
+   "t": 77.4,
+   "title": "Keyholes"
+  },
+  {
+   "t": 104.1,
+   "title": "The rising sun"
+  },
+  {
+   "t": 168.9,
+   "title": "The Great Buddha"
+  },
+  {
+   "t": 190.1,
+   "title": "The court of beauty"
+  },
+  {
+   "t": 232.4,
+   "title": "The warriors"
+  },
+  {
+   "t": 276.0,
+   "title": "Gold and stillness"
+  },
+  {
+   "t": 337.7,
+   "title": "Guns and tea"
+  },
+  {
+   "t": 389.7,
+   "title": "The floating world"
+  },
+  {
+   "t": 460.5,
+   "title": "Black ships"
+  },
+  {
+   "t": 511.2,
+   "title": "Empire and ashes"
+  },
+  {
+   "t": 574.4,
+   "title": "The miracle"
+  },
+  {
+   "t": 661.1,
+   "title": "Ink and light"
+  },
+  {
+   "t": 722.3,
+   "title": "The hands"
+  },
+  {
+   "t": 798.6,
+   "title": "Mended with gold"
+  }
+ ],
+ "narration": [
+  {
+   "t": 4.5,
+   "text": "More than fifteen thousand years ago, on a chain of green islands at the edge of Asia, people began to fire pots of clay."
+  },
+  {
+   "t": 15.0,
+   "text": "They are among the oldest pots in the world."
+  },
+  {
+   "t": 20.5,
+   "text": "Later potters rolled twisted cord across the wet clay, so we call these people the Jōmon: cord-marked."
+  },
+  {
+   "t": 29.7,
+   "text": "They fished, hunted and gathered chestnuts, and some of their villages lasted a thousand years."
+  },
+  {
+   "t": 38.6,
+   "text": "Their potters made pots with rims like flames, and clay figures with great goggle eyes."
+  },
+  {
+   "t": 47.9,
+   "text": "Then rice farming came across the sea from the mainland, and with it bronze and iron."
+  },
+  {
+   "t": 55.1,
+   "text": "Villages dug moats, built watchtowers, and kept their rice in granaries on stilts."
+  },
+  {
+   "t": 62.9,
+   "text": "A Chinese chronicle tells of a queen, Himiko, who ruled by sorcery and was seldom seen."
+  },
+  {
+   "t": 71.0,
+   "text": "The emperor of Wei sent her a golden seal, and a hundred bronze mirrors."
+  },
+  {
+   "t": 79.1,
+   "text": "Japan's early kings were buried in great mounds, shaped like keyholes and ringed by moats."
+  },
+  {
+   "t": 87.5,
+   "text": "On them stood hollow clay figures, called haniwa: houses, horses, warriors and dancers."
+  },
+  {
+   "t": 95.8,
+   "text": "From these kings descends Japan's imperial family, the oldest reigning monarchy in the world."
+  },
+  {
+   "t": 105.8,
+   "text": "In the sixth century, Buddhism came from Korea, with its scriptures, its statues, and its carpenters."
+  },
+  {
+   "t": 114.5,
+   "text": "Prince Shōtoku, it is said, wrote that harmony is to be valued above all things."
+  },
+  {
+   "t": 122.0,
+   "text": "A letter to the emperor of China began: from the Son of Heaven where the sun rises."
+  },
+  {
+   "t": 128.7,
+   "text": "Before long the country took the name it still has: Nihon, the origin of the sun."
+  },
+  {
+   "t": 137.5,
+   "text": "The temple he founded, Hōryū-ji, has the oldest wooden buildings standing anywhere in the world."
+  },
+  {
+   "t": 145.9,
+   "text": "One firm of temple carpenters, founded in 578, kept working for more than fourteen hundred years."
+  },
+  {
+   "t": 155.9,
+   "text": "And at Ise, the holiest shrine is rebuilt from fresh cypress every twenty years, as it has been since the seventh century, so that the craft is never forgotten."
+  },
+  {
+   "t": 170.6,
+   "text": "At Nara, an emperor cast a Buddha of bronze, fifteen metres tall. It used up most of the country's bronze."
+  },
+  {
+   "t": 181.0,
+   "text": "Its eyes were painted in with a great brush, tied to long cords, so that thousands of people could hold it too."
+  },
+  {
+   "t": 191.8,
+   "text": "The capital moved to Heian-kyō, today's Kyoto. It would stay there for more than a thousand years."
+  },
+  {
+   "t": 201.0,
+   "text": "Its court lived for beauty: for poetry, incense, moon-viewing, and robes of twelve layers, matched to the season."
+  },
+  {
+   "t": 210.9,
+   "text": "Women at court wrote in a new, flowing script, called kana."
+  },
+  {
+   "t": 216.6,
+   "text": "And Murasaki Shikibu wrote The Tale of Genji, often called the world's first novel."
+  },
+  {
+   "t": 225.0,
+   "text": "In the painted scrolls of the tale, the roofs are lifted away, so that we can see inside."
+  },
+  {
+   "t": 234.1,
+   "text": "Then the samurai took power. The emperor still reigned, but a military ruler, the shogun, governed, for most of the next seven hundred years."
+  },
+  {
+   "t": 246.3,
+   "text": "Twice, the Mongols sailed against Japan, and twice, storms helped drive them back. People called them kamikaze: winds of the gods."
+  },
+  {
+   "t": 259.6,
+   "text": "Swordsmiths folded their steel again and again, into thousands of layers."
+  },
+  {
+   "t": 265.5,
+   "text": "They coated the blade in clay, heated it, and plunged it into water. The edge turned hard, and the blade took on its curve."
+  },
+  {
+   "t": 277.7,
+   "text": "Under the Ashikaga shoguns, a pavilion covered in gold leaf rose over a quiet pond."
+  },
+  {
+   "t": 286.0,
+   "text": "Actors in carved masks performed Noh, a theatre still played much as it was six hundred years ago."
+  },
+  {
+   "t": 294.6,
+   "text": "Zen monks raked gardens of gravel and stone, to quiet the mind."
+  },
+  {
+   "t": 301.5,
+   "text": "There is a story that a shogun sent a cracked tea bowl to China for repair. It came back held together with ugly metal staples."
+  },
+  {
+   "t": 311.8,
+   "text": "So Japanese craftsmen found another way. They mended it with lacquer and gold, and made the break the most beautiful part of the bowl."
+  },
+  {
+   "t": 322.7,
+   "text": "It is called kintsugi: golden joinery."
+  },
+  {
+   "t": 328.6,
+   "text": "Then the great lords fell out. Kyoto burned, and for a century, the country was at war with itself."
+  },
+  {
+   "t": 339.4,
+   "text": "In 1543, Portuguese traders brought guns to Japan. Within a few years, Japanese smiths were making their own."
+  },
+  {
+   "t": 350.0,
+   "text": "Three warlords, one after another, forced the country back together, and built great white castles to hold it."
+  },
+  {
+   "t": 359.5,
+   "text": "Amid the wars, the tea master Sen no Rikyū built a tea room just two mats wide, with a door so low that every guest had to bow, and leave his sword outside."
+  },
+  {
+   "t": 372.7,
+   "text": "His lord, Hideyoshi, had one made of gold."
+  },
+  {
+   "t": 378.5,
+   "text": "In 1600, in the morning fog at Sekigahara, Tokugawa Ieyasu won the battle that decided who would rule Japan."
+  },
+  {
+   "t": 391.4,
+   "text": "Then came two and a half centuries of peace."
+  },
+  {
+   "t": 395.7,
+   "text": "Japan closed its doors. Only Dutch and Chinese ships could trade, at a single port: Nagasaki."
+  },
+  {
+   "t": 405.7,
+   "text": "Edo, today's Tokyo, grew to a million people, perhaps the largest city on Earth."
+  },
+  {
+   "t": 413.5,
+   "text": "Its people ate sushi from street stalls, crowded into kabuki theatres, and watched fireworks over the river on summer nights."
+  },
+  {
+   "t": 424.8,
+   "text": "The poet Bashō wrote: An old pond. A frog jumps in. The sound of water."
+  },
+  {
+   "t": 435.3,
+   "text": "Artists made woodblock prints, carved and printed one colour at a time, and sold them for about the price of a bowl of noodles."
+  },
+  {
+   "t": 445.5,
+   "text": "The most famous is Hokusai's Great Wave."
+  },
+  {
+   "t": 453.5,
+   "text": "When Europe saw these prints, painters like Van Gogh and Monet fell in love with them."
+  },
+  {
+   "t": 462.2,
+   "text": "In 1853, American warships, black-hulled and trailing coal smoke, steamed into Edo Bay, and demanded that Japan open up."
+  },
+  {
+   "t": 474.2,
+   "text": "Fifteen years later the shogun fell, and under the young emperor Meiji, Japan raced to catch up with the West."
+  },
+  {
+   "t": 483.6,
+   "text": "Samurai cut off their topknots. Within a generation came railways, factories, schools and a parliament."
+  },
+  {
+   "t": 493.1,
+   "text": "The far north, land of the Ainu, became Hokkaido, and the kingdom of Ryukyu became Okinawa."
+  },
+  {
+   "t": 502.0,
+   "text": "In 1905, it defeated Russia: the first Asian power in modern times to beat a European one."
+  },
+  {
+   "t": 512.9,
+   "text": "Japan made Korea a colony, and in the 1930s invaded China. Its armies brought war, massacre and forced labour across Asia, and millions died."
+  },
+  {
+   "t": 526.7,
+   "text": "In 1941, it attacked the United States at Pearl Harbor."
+  },
+  {
+   "t": 533.7,
+   "text": "American bombers burned Japan's cities. In one night in Tokyo, about a hundred thousand people were killed."
+  },
+  {
+   "t": 544.9,
+   "text": "In August 1945, two atomic bombs destroyed Hiroshima and Nagasaki."
+  },
+  {
+   "t": 555.9,
+   "text": "Japan surrendered. Its cities lay in ashes."
+  },
+  {
+   "t": 563.2,
+   "text": "In Hiroshima, a girl named Sadako, sick from the bomb, folded more than a thousand paper cranes. They have become a wish for peace."
+  },
+  {
+   "t": 576.1,
+   "text": "Japan rebuilt itself, under a new constitution that renounced war."
+  },
+  {
+   "t": 582.9,
+   "text": "For almost twenty years, its economy grew by around ten percent a year."
+  },
+  {
+   "t": 589.5,
+   "text": "At Toyota, any worker could stop the whole assembly line by pulling a cord, to fix a problem where it began. Improving everything, a little, every day, was called kaizen."
+  },
+  {
+   "t": 604.1,
+   "text": "Sony made a radio small enough for a shirt pocket. Almost: its salesmen wore shirts with slightly larger pockets."
+  },
+  {
+   "t": 614.6,
+   "text": "In 1964, Tokyo held the Olympics. Nine days before, the world's first high-speed railway opened: the Shinkansen."
+  },
+  {
+   "t": 626.2,
+   "text": "Its bullet trains have since carried billions of passengers, without one being killed in a crash."
+  },
+  {
+   "t": 634.6,
+   "text": "By 1968, Japan had the second largest economy in the world."
+  },
+  {
+   "t": 642.1,
+   "text": "In the 1980s its cities glowed. Land in Tokyo became so precious that the grounds of the Imperial Palace were said to be worth more than all of California."
+  },
+  {
+   "t": 656.6,
+   "text": "Then, in 1990, the bubble burst."
+  },
+  {
+   "t": 662.8,
+   "text": "Meanwhile, a young medical student named Osamu Tezuka was drawing comics like films: close-ups, long shots, and big, expressive eyes."
+  },
+  {
+   "t": 675.3,
+   "text": "Manga became something everyone read. In 1995, one weekly manga magazine sold more than six million copies an issue."
+  },
+  {
+   "t": 686.9,
+   "text": "Its stories came to life as anime, drawn by hand, frame by frame."
+  },
+  {
+   "t": 693.5,
+   "text": "For one four-second crowd scene, an animator at Studio Ghibli worked for more than a year."
+  },
+  {
+   "t": 702.6,
+   "text": "Hayao Miyazaki's Spirited Away won an Oscar, and manga, anime and games went round the world."
+  },
+  {
+   "t": 711.7,
+   "text": "Nintendo, founded in 1889 to make playing cards by hand, became a maker of games played all over the world."
+  },
+  {
+   "t": 724.0,
+   "text": "The old crafts carry on. Japan has more companies over a hundred years old than any other country. One inn has been run by the same family since 705."
+  },
+  {
+   "t": 738.3,
+   "text": "Sushi chefs train for years. Swordsmiths still fold their steel. And in 2013, the shrine at Ise was rebuilt for the sixty-second time."
+  },
+  {
+   "t": 752.7,
+   "text": "In 2011, the sea rose. A tsunami left nearly twenty thousand people dead or missing, and wrecked the nuclear plant at Fukushima."
+  },
+  {
+   "t": 765.5,
+   "text": "Along that coast stand old stones, carved by earlier generations: Do not build your homes below this point."
+  },
+  {
+   "t": 776.1,
+   "text": "Where the water stopped, people are planting a line of cherry trees."
+  },
+  {
+   "t": 783.4,
+   "text": "Its engineers have built a train that floats at six hundred kilometres an hour, and probes that bring back dust from asteroids."
+  },
+  {
+   "t": 793.8,
+   "text": "Its people live some of the longest lives on Earth."
+  },
+  {
+   "t": 800.3,
+   "text": "This country has been broken many times: by war and fire, by earthquakes, and by the sea."
+  },
+  {
+   "t": 808.8,
+   "text": "Each time, it was mended, carefully, by hand."
+  },
+  {
+   "t": 814.8,
+   "text": "And like a bowl mended with gold, it does not hide its seams. It lets them shine."
+  }
+ ],
+ "events": {
+  "fired": 10.5,
+  "pot1": 15.0,
+  "pot1Out": 20.3,
+  "cord": 20.8,
+  "cordOut": 28.0,
+  "fish": 29.7,
+  "deerRun": 32.4,
+  "chestnut": 34.0,
+  "thousand": 35.4,
+  "flamepot": 40.6,
+  "dogu": 42.4,
+  "goggle": 43.9
+ }
+}

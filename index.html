@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Long Thread</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#060405">
+<meta name="description" content="A history of China, in paper: a twelve-minute narrated film, from a nine-thousand-year-old bone flute to the far side of the Moon.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Long Thread">
+<meta property="og:description" content="A history of China, in paper. A twelve-minute film, with sound.">
+<meta property="og:url" content="https://raycoding1-collab.github.io/China-/">
+<meta property="og:image" content="https://raycoding1-collab.github.io/China-/assets/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Paper-cut treasure ships with red sails on a tiny cardboard planet, under the title The Long Thread.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="apple-touch-icon" href="assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..500;1,9..144,300..400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="caption" aria-live="polite"></div>
+<div id="end" aria-hidden="true"><h2>The Long Thread</h2><p>a history of China, in paper</p></div>
+<div id="veil">
+  <div class="card">
+    <p class="kicker">a history of China, in paper</p>
+    <h1>The Long Thread</h1>
+    <button id="begin" type="button">Begin</button>
+    <p class="hint">with sound</p>
+  </div>
+</div>
+<div id="bar">
+  <button id="play" type="button" aria-label="Pause"><svg viewBox="0 0 24 24"><path id="playIcon" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+  <button id="chap" type="button" aria-label="Chapters" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h11v2H4z"/></svg></button>
+  <button id="cc" type="button" aria-label="Captions" aria-pressed="true">CC</button>
+  <input id="vol" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volume">
+</div>
+<nav id="chapters" hidden aria-label="Chapters"></nav>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
