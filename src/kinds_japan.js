@@ -638,11 +638,11 @@ KINDS.scaffold = {
 // The Great Buddha of Tōdai-ji: seated on a lotus, one hand raised, under a golden halo.
 // e.eyes(t): 0 blind, 1 painted in; e.shine(t) a golden light from him.
 KINDS.daibutsu = {
-  bake(mk) {
-    const r = rng(7300), br = '#4e4a3c', brl = shade(br, 0.16), P = {};
-    const sh = mk('daibutsu', [-260, -520, 260, 8]);
-    // the halo, gold with small seated buddhas
-    sh.piece(ellipse(0, -330, 200, 190, 40), '#b8913a', { round: 10, paint: (g) => { g.strokeStyle = 'rgba(255,230,150,.45)'; g.lineWidth = 3; for (const rr of [150, 170, 186]) { g.beginPath(); g.arc(0, -330, rr, 0, 7); g.stroke(); } g.fillStyle = 'rgba(120,80,20,.5)'; for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, x = Math.cos(a) * 168, y = -330 + Math.sin(a) * 160; g.beginPath(); g.arc(x, y - 4, 4, 0, 7); g.fill(); g.beginPath(); g.ellipse(x, y + 5, 6, 5, 0, 0, 7); g.fill(); } } });
+  bake(mk, v = 0) {
+    const r = rng(7300), br = v ? '#56685a' : '#4e4a3c', brl = shade(br, 0.16), P = {};
+    const sh = mk('daibutsu' + v, [-260, -520, 260, 8]);
+    // the halo, gold with small seated buddhas (Kamakura's sits in the open air, without one)
+    if (!v) sh.piece(ellipse(0, -330, 200, 190, 40), '#b8913a', { round: 10, paint: (g) => { g.strokeStyle = 'rgba(255,230,150,.45)'; g.lineWidth = 3; for (const rr of [150, 170, 186]) { g.beginPath(); g.arc(0, -330, rr, 0, 7); g.stroke(); } g.fillStyle = 'rgba(120,80,20,.5)'; for (let k = 0; k < 16; k++) { const a = k / 16 * 6.283, x = Math.cos(a) * 168, y = -330 + Math.sin(a) * 160; g.beginPath(); g.arc(x, y - 4, 4, 0, 7); g.fill(); g.beginPath(); g.ellipse(x, y + 5, 6, 5, 0, 0, 7); g.fill(); } } });
     // the lotus throne
     for (let k = 0; k < 9; k++) { const x = -200 + k * 50; sh.piece([[x - 26, 4], [x - 30, -30], [x, -60], [x + 30, -30], [x + 26, 4]], k % 2 ? '#5a5444' : '#625c4a', { round: 6, lift: 1, paint: (g) => { g.strokeStyle = 'rgba(200,180,120,.3)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x, -54); g.lineTo(x, 0); g.stroke(); } }); }
     // the body: crossed legs, robe, torso
@@ -705,4 +705,176 @@ KINDS.gilt = {
   },
   draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 3); },
   glow(g, P, t, e, env, p) { if (p < 0.6) return; g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(0, -70, 0, 0, -70, 70); gr.addColorStop(0, 'rgba(255,220,140,.3)'); gr.addColorStop(1, 'rgba(255,200,120,0)'); g.fillStyle = gr; g.fillRect(-70, -140, 140, 140); g.globalCompositeOperation = 'source-over'; },
+};
+
+// ================================================================== the Heian court ===
+// A noble's hall in two parts, so the roof can be lifted off like the painted scrolls of Genji:
+// KINDS.shinden is the raised floor and the painted screens inside; KINDS.shindenFront (drawn over the
+// people inside) is the front posts, the bamboo blinds (e.blinds(t): 0 down, 1 rolled up, lit by e.lamp(t))
+// and the cypress-bark roof (e.roof(t): 0 on, 1 lifted away on its threads).
+const SHD = (v) => ({ w: v ? 110 : 170, fl: 58, h: v ? 120 : 130 });
+KINDS.shinden = {
+  bake(mk, v = 0) {
+    const { w, fl, h } = SHD(v), r = rng(7400 + v), sh = mk('shinden' + v, [-w - 30, -fl - h - 20, w + 30, 6]);
+    for (let x = -w; x <= w; x += (w * 2) / 6) sh.piece(strip(x, 4, x, -fl, 8, 8), '#5a3e2c', { round: 1.2 });
+    // the interior: painted sliding screens, blue-green mountains on gold, and a band of tatami
+    sh.piece(rect(-w, -fl, w, -fl - h), '#d8b866', { round: 1, lift: 1, paint: (g) => {
+      g.fillStyle = '#e2c47a'; g.fillRect(-w, -fl - h, w * 2, h);
+      for (let k = 0; k < 7; k++) { const x0 = -w + k * w * 0.32; g.fillStyle = k % 2 ? 'rgba(60,110,100,.75)' : 'rgba(80,130,120,.7)'; g.beginPath(); g.moveTo(x0 - 30, -fl - 20); g.quadraticCurveTo(x0 + 10, -fl - h * 0.75 - r() * 20, x0 + 50, -fl - 20); g.fill(); }
+      g.fillStyle = 'rgba(40,80,120,.5)'; g.fillRect(-w, -fl - 24, w * 2, 8);
+      g.strokeStyle = 'rgba(70,46,26,.6)'; g.lineWidth = 1.4; for (let x = -w; x <= w; x += (w * 2) / 6) { g.beginPath(); g.moveTo(x, -fl); g.lineTo(x, -fl - h); g.stroke(); }
+    } });
+    sh.piece(rect(-w - 14, -fl + 4, w + 14, -fl - 8), '#7a5a3e', { round: 1.2, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(200,190,120,.6)'; g.fillRect(-w, -fl - 8, w * 2, 4); } });
+    sh.piece([[-26, 4], [-18, -fl], [18, -fl], [26, 4]], '#6a4c34', { round: 1, lift: 1.2, paint: (g) => { g.strokeStyle = 'rgba(40,24,14,.5)'; g.lineWidth = 1; for (let y = 0; y > -fl; y -= 7) { g.beginPath(); g.moveTo(-24, y); g.lineTo(24, y); g.stroke(); } } });
+    return { spr: sh.finish({ shadowBlur: 6 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 4, 5); },
+};
+KINDS.shindenFront = {
+  bake(mk, v = 0) {
+    const { w, fl, h } = SHD(v), r = rng(7500 + v), P = {};
+    const posts = mk('shdf-p' + v, [-w - 10, -fl - h - 10, w + 10, 6]);
+    for (let x = -w; x <= w; x += (w * 2) / 3) posts.piece(strip(x, -fl, x, -fl - h, 9, 8), '#6a4630', { round: 1.2, lift: 1 });
+    posts.piece(rect(-w - 6, -fl - h + 6, w + 6, -fl - h - 6), '#5a3e2c', { round: 1, lift: 1.2 });
+    P.posts = posts.finish({ shadowBlur: 4 });
+    const bw = (w * 2) / 3 - 10;
+    P.blind = mk('shdf-b' + v, [-bw / 2 - 2, -2, bw / 2 + 2, h - 8]).piece(rect(-bw / 2, 0, bw / 2, h - 12), '#c8b07a', { round: 1, paint: (g) => { g.strokeStyle = 'rgba(110,80,40,.5)'; g.lineWidth = 0.9; for (let y = 3; y < h - 12; y += 3.2) { g.beginPath(); g.moveTo(-bw / 2, y); g.lineTo(bw / 2, y); g.stroke(); } g.fillStyle = '#8a3a3a'; g.fillRect(-bw / 2, 0, bw, 5); g.fillStyle = 'rgba(220,180,90,.8)'; for (const x of [-bw * 0.25, bw * 0.25]) g.fillRect(x - 1.5, 0, 3, h * 0.5); } }).finish({ shadowBlur: 2 });
+    P.roll = mk('shdf-r' + v, [-bw / 2 - 2, -8, bw / 2 + 2, 8]).piece(ellipse(0, 0, bw / 2, 6, 14), '#c8b07a', { round: 4, paint: (g) => { g.fillStyle = '#8a3a3a'; g.fillRect(-bw / 2, -2, bw, 3); } }).finish({ shadowBlur: 2 });
+    const rf = mk('shdf-roof' + v, [-w - 70, -110, w + 70, 10]);
+    rf.piece(jroof(w + 10, 0, 90, 46, 6), '#4a3428', { round: 3, rough: 0.6, paint: (g) => { g.strokeStyle = 'rgba(20,10,6,.35)'; g.lineWidth = 1; for (let k = 0; k < 9; k++) { g.beginPath(); g.moveTo(-w * 1.3, -k * 9 - 4); g.lineTo(w * 1.3, -k * 9 - 4); g.stroke(); } g.fillStyle = 'rgba(160,120,90,.35)'; g.fillRect(-w - 60, -5, (w + 60) * 2, 4); } });
+    rf.piece(rect(-w * 0.4 - 6, -88, w * 0.4 + 6, -98), '#2e2018', { round: 1.5, lift: 1.2 });
+    P.roof = rf.finish({ shadowBlur: 6 });
+    return P;
+  },
+  draw(g, P, t, e, env) {
+    const v = e.v || 0, { w, fl, h } = SHD(v), up = e.blinds ? e.blinds(t) : 0, lift = e.roof ? e.roof(t) : 0, bw = (w * 2) / 3 - 10;
+    put(g, P.posts, env.sh, 3, 4);
+    for (let i = 0; i < 3; i++) { const cx = -w + (i + 0.5) * (w * 2) / 3, k = clamp(up * 1.3 - i * 0.15); g.save(); g.translate(cx, -fl - h + 6); if (k < 0.98) { g.save(); g.beginPath(); g.rect(-bw / 2 - 4, 0, bw + 8, (h - 10) * (1 - k)); g.clip(); put(g, P.blind, env.sh * 0.5, 1, 2); g.restore(); } g.translate(0, (h - 12) * (1 - k) + 2); put(g, P.roll, env.sh * 0.5, 1, 2); g.restore(); }
+    // the roof, lifted on four threads
+    const ly = -fl - h - lift * 300, tilt = lift * 4 * DEG * Math.sin(t * 0.6);
+    if (lift > 0.01) { g.strokeStyle = 'rgba(200,190,175,.45)'; g.lineWidth = 1; for (const x of [-w * 0.8, w * 0.8]) { g.beginPath(); g.moveTo(x, ly - 60); g.lineTo(x + lift * 20, -2000); g.stroke(); } }
+    g.save(); g.translate(0, ly); g.rotate(tilt); put(g, P.roof, env.sh * (1 - lift * 0.8), 4, 6 + lift * 30); g.restore();
+  },
+  glow(g, P, t, e, env, p) {
+    const k = e.lamp ? e.lamp(t) : 0; if (k < 0.01 || p < 0.6) return;
+    const v = e.v || 0, { w, fl, h } = SHD(v), up = e.blinds ? e.blinds(t) : 0, f = 0.88 + 0.12 * fbm(t * 5, e.a);
+    g.globalCompositeOperation = 'lighter';
+    const gr = g.createRadialGradient(0, -fl - h * 0.5, 0, 0, -fl - h * 0.5, w * 1.4); gr.addColorStop(0, `rgba(255,190,110,${0.35 * k * f})`); gr.addColorStop(1, 'rgba(255,170,90,0)'); g.fillStyle = gr; g.fillRect(-w * 1.5, -fl - h * 1.8, w * 3, h * 2.6);
+    if (up < 0.9) { const bw = (w * 2) / 3 - 10; for (let i = 0; i < 3; i++) { const cx = -w + (i + 0.5) * (w * 2) / 3; g.fillStyle = `rgba(255,196,120,${0.32 * k * f * (1 - up)})`; g.fillRect(cx - bw / 2, -fl - h + 12, bw, (h - 18) * (1 - up)); } }
+    g.globalCompositeOperation = 'source-over';
+  },
+};
+
+// An ox-drawn court carriage with its lacquered cabin, bark roof and a blind at the front; e.move drives it.
+KINDS.gissha = {
+  bake(mk) {
+    const P = {};
+    P.cab = mk('gissha-c', [-80, -150, 120, 10]).piece(rect(-60, -40, 60, -120), '#2a2226', { round: 2, paint: (g) => { g.fillStyle = 'rgba(200,160,80,.7)'; g.fillRect(-56, -116, 112, 3); g.fillStyle = '#c8b07a'; g.fillRect(36, -112, 22, 66); g.strokeStyle = 'rgba(110,80,40,.6)'; g.lineWidth = 0.8; for (let y = -110; y < -46; y += 3) { g.beginPath(); g.moveTo(36, y); g.lineTo(58, y); g.stroke(); } } })
+      .piece([[-76, -116], [-60, -140], [62, -140], [80, -116], [60, -122], [-58, -122]], '#4a3428', { round: 3, lift: 1.6 })
+      .piece(strip(50, -46, 118, -40, 4, 3), '#3a2a20', { round: 1, lift: 1 }).piece(strip(50, -56, 118, -50, 4, 3), '#3a2a20', { round: 1, lift: 1 })
+      .finish({ shadowBlur: 4 });
+    P.wheel = mk('gissha-w', [-44, -44, 44, 44], { pad: 4 }).piece(ellipse(0, 0, 42, 42, 28), '#2a2226', { round: 6 }).piece(ellipse(0, 0, 34, 34, 24), '#6a5a48', { round: 6, lift: 0.4, paint: (g) => { g.strokeStyle = '#2a2226'; g.lineWidth = 2.4; for (let k = 0; k < 16; k++) { const a = k * Math.PI / 8; g.beginPath(); g.moveTo(Math.cos(a) * 6, Math.sin(a) * 6); g.lineTo(Math.cos(a) * 34, Math.sin(a) * 34); g.stroke(); } } }).piece(ellipse(0, 0, 8, 8, 10), '#c9a24a', { round: 3, lift: 0.8 }).finish({ shadowBlur: 2 });
+    P.ox = mk('gissha-o', [-70, -110, 80, 6]).piece([[-60, -40], [-58, -78], [-20, -88], [30, -88], [56, -74], [60, -44], [-56, -38]], '#2a2420', { round: 10, paint: (g) => { g.fillStyle = 'rgba(255,240,220,.08)'; g.fillRect(-56, -86, 110, 12); } })
+      .piece([[46, -82], [62, -96], [78, -86], [74, -66], [58, -64]], '#2a2420', { round: 6, lift: 1.2, paint: (g) => { g.fillStyle = '#d8d0c0'; g.beginPath(); g.moveTo(58, -96); g.lineTo(52, -106); g.lineTo(62, -98); g.fill(); g.fillStyle = '#c8302a'; g.fillRect(48, -82, 4, 16); } })
+      .finish({ shadowBlur: 3 });
+    P.leg = mk('gissha-l', [-6, -4, 6, 46], { pad: 3 }).piece(rect(-4.5, -2, 4.5, 44), '#2a2420', { round: 2 }).finish({ shadowBlur: 2 });
+    P.driver = puppet(mk, 'oxDriver');
+    return P;
+  },
+  draw(g, P, t, e, env) {
+    const moving = e.move && Math.abs(e.move(t + 0.05) - e.move(t)) > 0.001, ph = t * 3.6 + e.a, d = e.move ? e.move(t) * DEG * 1000 : 0;
+    g.save(); g.translate(170, 0); for (const [x, o] of [[-46, 0], [-34, 1.6], [40, 3.2], [52, 4.8]]) { g.save(); g.translate(x, -44); g.rotate(moving ? Math.sin(ph + o) * 16 * DEG : 0); put(g, P.leg, env.sh, 2, 2); g.restore(); } put(g, P.ox, env.sh, 3, 4); g.restore();
+    put(g, P.cab, env.sh, 3, 4);
+    g.save(); g.translate(0, -42); g.rotate(d / 42); put(g, P.wheel, env.sh * 0.6, 2, 3); g.restore();
+    g.save(); g.translate(250, 0); drawPerson(g, P.driver, t, e, env, moving ? { walk: ph * 1.4, lean: 4, head: -4, back: [10, -10], front: [-70, -30] } : { lean: 2, head: -6, back: [8, -8], front: [-70, -30] }); g.restore();
+  },
+};
+
+// A dragon-headed pleasure boat on the garden pond, under a little canopy, with musicians aboard.
+KINDS.ryutosen = {
+  bake(mk) {
+    const sh = mk('ryutosen', [-130, -170, 150, 10]);
+    sh.piece([[-120, -30], [-100, 4], [90, 4], [120, -34], [100, -26], [-100, -24]], '#3a5a4a', { round: 4, paint: (g) => { g.fillStyle = 'rgba(220,180,80,.7)'; for (let x = -90; x < 90; x += 16) g.fillRect(x, -16, 8, 3); } });
+    sh.piece([[104, -30], [118, -72], [134, -92], [148, -86], [140, -70], [126, -62], [120, -30]], '#2e7a5e', { round: 3, lift: 1.4, paint: (g) => { g.fillStyle = '#c9a24a'; g.beginPath(); g.arc(136, -84, 2.4, 0, 7); g.fill(); g.strokeStyle = '#c8302a'; g.lineWidth = 2; g.beginPath(); g.moveTo(130, -92); g.quadraticCurveTo(118, -110, 104, -104); g.stroke(); } });
+    for (const x of [-60, 40]) sh.piece(strip(x, -24, x, -140, 4, 4), '#8a3a2a', { round: 1, lift: 1 });
+    sh.piece([[-80, -136], [-10, -156], [60, -136], [40, -132], [-60, -132]], '#c8a050', { round: 2, lift: 1.6, paint: (g) => { g.fillStyle = 'rgba(160,40,30,.7)'; g.fillRect(-70, -136, 120, 4); } });
+    return { spr: sh.finish({ shadowBlur: 5 }), a: puppet(mk, 'courtMusician'), b: puppet(mk, 'courtLadyKneel') };
+  },
+  draw(g, P, t, e, env) {
+    g.translate(0, Math.sin(t * 1.0 + e.a) * 1.6); g.rotate(Math.sin(t * 0.8 + e.a) * 1.2 * DEG);
+    g.save(); g.translate(-30, -22); drawPerson(g, P.b, t, e, env, { lean: 4, head: -14 + Math.sin(t * 0.4) * 4, back: [-30, -40], front: [-46, -40] }); g.restore();
+    g.save(); g.translate(20, -22); drawPerson(g, P.a, t, e, env, { lean: 6, head: -8, back: [-60, -50], front: [-100, -40] }); g.restore();
+    put(g, P.spr, env.sh, 3, 4);
+  },
+};
+
+// A tall oil-lamp stand: its flame is drawn in the glow pass (e.lit(t)).
+KINDS.todai = { bake(mk) { return { spr: mk('todai', [-16, -110, 16, 6]).piece(strip(0, 4, 0, -96, 3.4, 3), '#3a2a20', { round: 1 }).piece(ellipse(0, -96, 10, 2.6, 12), '#5a4030', { round: 1, lift: 1 }).piece(ellipse(0, 2, 12, 3, 12), '#3a2a20', { round: 1, lift: 1 }).finish({ shadowBlur: 2 }) }; }, draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 2); }, glow(g, P, t, e, env, p) { const k = e.lit ? e.lit(t) : 1; if (k < 0.01 || p < 0.6) return; const f = 0.85 + 0.15 * fbm(t * 9, e.a); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(0, -102, 0, 0, -102, 60); gr.addColorStop(0, `rgba(255,220,150,${0.9 * k * f})`); gr.addColorStop(0.15, `rgba(255,170,80,${0.4 * k * f})`); gr.addColorStop(1, 'rgba(255,150,60,0)'); g.fillStyle = gr; g.fillRect(-60, -162, 120, 120); g.fillStyle = `rgba(255,236,190,${k})`; g.beginPath(); g.ellipse(0, -103, 2, 4.4 * f, 0, 0, 7); g.fill(); g.globalCompositeOperation = 'source-over'; } };
+
+// ================================================================= the samurai ===
+// Camp curtains on poles, with a great crest. v0 the Minamoto gentian, v1 two bars in a ring.
+KINDS.jinmaku = {
+  bake(mk, v = 0) {
+    const sh = mk('jinmaku' + v, [-90, -120, 90, 6]);
+    for (const x of [-84, 0, 84]) sh.piece(strip(x, 4, x, -112, 4, 3.4), '#5a4030', { round: 1 });
+    sh.piece([[-86, -100], [86, -100], [86, -30], [-86, -30]], '#efe8d8', { round: 2, lift: 1.2, paint: (g) => { g.fillStyle = '#2a2a3a'; for (const y of [-92, -66, -40]) g.fillRect(-86, y, 172, 7); g.fillStyle = '#efe8d8'; g.beginPath(); g.arc(0, -66, 22, 0, 7); g.fill(); g.fillStyle = '#2a2a3a'; if (v) { g.fillRect(-16, -74, 32, 5); g.fillRect(-16, -62, 32, 5); g.strokeStyle = '#2a2a3a'; g.lineWidth = 2.4; g.beginPath(); g.arc(0, -66, 19, 0, 7); g.stroke(); } else { for (const a of [-0.6, 0, 0.6]) { g.save(); g.translate(0, -60); g.rotate(a); g.beginPath(); g.ellipse(0, -10, 4, 10, 0, 0, 7); g.fill(); g.restore(); } g.beginPath(); g.moveTo(-8, -54); g.lineTo(0, -48); g.lineTo(8, -54); g.fill(); } } });
+    return { spr: sh.finish({ shadowBlur: 4 }) };
+  },
+  draw(g, P, t, e, env) { g.rotate(fbm(t * 0.8 + e.a, 4) * 1.2 * DEG); put(g, P.spr, env.sh, 3, 4); },
+};
+// A folding field stool (shōgi), for the general.
+KINDS.shogi = { bake(mk) { return { spr: mk('shogi', [-26, -40, 26, 6]).piece(strip(-20, 4, 20, -34, 3, 3), '#4a3428', { round: 1 }).piece(strip(20, 4, -20, -34, 3, 3), '#3a2a20', { round: 1, lift: 0.8 }).piece(rect(-22, -32, 22, -38), '#7a2a2a', { round: 1, lift: 1 }).finish({ shadowBlur: 2 }) }; }, draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 2); } };
+// A stone sea wall, built against the Mongols.
+KINDS.stonewall = {
+  bake(mk, v = 0) {
+    const r = rng(7600 + v), sh = mk('stonewall' + v, [-60, -80, 60, 6]);
+    sh.piece([[-58, 4], [-54, -66], [54, -70], [58, 4]], '#8a8478', { round: 3, rough: 1.4, paint: (g) => { for (let y = 0; y > -70; y -= 12) for (let x = -56 + ((y / 12) & 1) * 10; x < 56; x += 20) { g.fillStyle = r() < 0.5 ? 'rgba(60,56,50,.35)' : 'rgba(200,196,186,.25)'; g.beginPath(); g.ellipse(x + 8, y - 6, 9, 5.4, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(40,36,30,.4)'; g.lineWidth = 1; g.stroke(); } } });
+    return { spr: sh.finish({ shadowBlur: 4 }) };
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 3, 4); },
+};
+// The swordsmith's forge: a clay hearth with its fire, the box bellows, an anvil, a water trough, and the
+// sacred rope over it all. e.pump(t) works the bellows.
+KINDS.forge = {
+  bake(mk) {
+    const P = {}, sh = mk('forge', [-160, -230, 160, 6]);
+    sh.piece([[-150, -210], [150, -210], [150, -200], [-150, -200]], '#c8b07a', { round: 2, rough: 1, paint: (g) => { g.strokeStyle = 'rgba(120,90,40,.6)'; g.lineWidth = 1; for (let x = -146; x < 150; x += 6) { g.beginPath(); g.moveTo(x, -210); g.lineTo(x + 3, -200); g.stroke(); } } });
+    for (const x of [-110, -50, 10, 70, 130]) sh.piece([[x - 6, -200], [x + 6, -200], [x + 4, -170], [x + 8, -164], [x - 2, -168]], '#f4f0e6', { round: 0.6, lift: 0.6, thick: 0.4 });
+    sh.piece([[-70, 4], [-74, -60], [-40, -84], [20, -84], [40, -60], [40, 4]], '#9a6a4a', { round: 6, rough: 1.2, paint: (g) => { g.fillStyle = 'rgba(20,10,6,.95)'; g.beginPath(); g.ellipse(-14, -52, 16, 12, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(60,30,14,.4)'; g.lineWidth = 1.2; for (let y = -6; y > -80; y -= 10) { g.beginPath(); g.moveTo(-70, y); g.lineTo(40, y); g.stroke(); } } });
+    sh.piece(rect(-150, -6, -84, -64), '#6a4a30', { round: 2, lift: 1.2, paint: (g) => { g.strokeStyle = 'rgba(30,18,10,.5)'; g.lineWidth = 1.2; for (let x = -146; x < -86; x += 9) { g.beginPath(); g.moveTo(x, -6); g.lineTo(x, -64); g.stroke(); } } });
+    sh.piece(rect(70, 4, 104, -26), '#3a3438', { round: 2, lift: 1.2, paint: (g) => { g.fillStyle = 'rgba(200,200,210,.3)'; g.fillRect(70, -26, 34, 4); } });
+    sh.piece(rect(118, 4, 158, -22), '#5a4030', { round: 2, lift: 1.2, paint: (g) => { g.fillStyle = 'rgba(60,90,110,.9)'; g.fillRect(120, -22, 36, 6); } });
+    P.spr = sh.finish({ shadowBlur: 6 });
+    P.handle = mk('forge-h', [-40, -6, 4, 6], { pad: 3 }).piece(rect(-38, -3, 0, 3), '#4a3428', { round: 1 }).finish({ shadowBlur: 2 });
+    return P;
+  },
+  draw(g, P, t, e, env) { put(g, P.spr, env.sh, 3, 4); const k = e.pump ? e.pump(t) : 0; g.save(); g.translate(-150 - k * 24, -36); put(g, P.handle, env.sh, 2, 2); g.restore(); },
+};
+
+// A tall banner on a pole with a crest: v0 the Minamoto's bamboo and gentian, v1 the Ashikaga's two bars,
+// v2 the Tokugawa's three hollyhock leaves.
+KINDS.nobori = {
+  bake(mk, v = 0) {
+    const col = ['#efe8d8', '#efe8d8', '#efe8d8'][v], mark = ['#2a2a3a', '#2a2a3a', '#2a2a3a'][v], sh = mk('nobori' + v, [-40, -290, 40, 6]);
+    sh.piece(strip(-24, 4, -24, -280, 4, 3.4), '#3a2a20', { round: 1 });
+    sh.piece(rect(-24, -270, 24, -60), col, { round: 1.5, lift: 1.2, paint: (g) => {
+      g.fillStyle = mark; for (let y = -264; y < -60; y += 18) g.fillRect(-28, y, 4, 4);
+      g.save(); g.translate(0, -214); g.fillStyle = mark; g.strokeStyle = mark; g.lineWidth = 2.2; g.beginPath(); g.arc(0, 0, 17, 0, 7); g.stroke();
+      if (v === 1) { g.fillRect(-13, -7, 26, 4.6); g.fillRect(-13, 3, 26, 4.6); }
+      else if (v === 2) { for (const a of [0, 2.094, 4.189]) { g.save(); g.rotate(a); g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(-9, -4, -8, -15, 0, -14); g.bezierCurveTo(8, -15, 9, -4, 0, 0); g.fill(); g.restore(); } }
+      else { for (const a of [-0.5, 0, 0.5]) { g.save(); g.rotate(a); g.beginPath(); g.ellipse(0, -8, 3.4, 8, 0, 0, 7); g.fill(); g.restore(); } g.beginPath(); g.moveTo(-9, 6); g.lineTo(0, 12); g.lineTo(9, 6); g.lineTo(0, 3); g.fill(); }
+      g.restore();
+    } });
+    return { spr: sh.finish({ shadowBlur: 4 }) };
+  },
+  draw(g, P, t, e, env) { g.rotate((fbm(t * 0.9 + e.a, 3) * 2 + Math.sin(t * 2.2 + e.a) * 0.6) * DEG); put(g, P.spr, env.sh, 3, 4); },
+};
+// A koto: a long zither of paulownia, with its bridges.
+KINDS.koto = { bake(mk) { return { spr: mk('koto', [-80, -20, 80, 6]).piece([[-76, -8], [74, -14], [76, -6], [-74, 2]], '#a8783e', { round: 3, paint: (g) => { g.strokeStyle = 'rgba(240,230,210,.7)'; g.lineWidth = 0.6; for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(-70, -8 + k * 0.4); g.lineTo(70, -13 + k * 0.4); g.stroke(); } g.fillStyle = '#efe6d2'; for (let k = 0; k < 9; k++) g.fillRect(-56 + k * 13, -14 + k * 0.2 - (k % 3), 2, 4); } }).finish({ shadowBlur: 2 }) }; }, draw(g, P, t, e, env) { put(g, P.spr, env.sh, 2, 2); } };
+// A curtain stand (kichō): silk hung from a T-shaped frame, to screen a lady from view.
+KINDS.kicho = { bake(mk) { return { spr: mk('kicho', [-50, -130, 50, 6]).piece(strip(0, 4, 0, -124, 4, 3), '#2a2420', { round: 1 }).piece(rect(-44, -120, 44, -126), '#2a2420', { round: 1, lift: 1 }).piece([[-42, -118], [42, -118], [44, -6], [-44, -6]], '#c8604a', { round: 2, lift: 1.2, paint: (g) => { g.fillStyle = '#e8c070'; for (const x of [-28, 0, 28]) g.fillRect(x - 3, -118, 6, 112); g.fillStyle = 'rgba(255,255,255,.15)'; for (let k = 0; k < 6; k++) { g.beginPath(); g.ellipse(-30 + k * 12, -70, 4, 6, 0, 0, 7); g.fill(); } } }).finish({ shadowBlur: 3 }) }; }, draw(g, P, t, e, env) { g.rotate(fbm(t * 0.5 + e.a, 2) * 0.8 * DEG); put(g, P.spr, env.sh, 2, 3); } };
+// A Kamakura-era rider: gallops in, then stands (e.stopAt).
+KINDS.samurider = {
+  bake(mk, v) { return KINDS.rider.bake(mk, v); },
+  draw(g, P, t, e, env) { e.gait = t < (e.stopAt ?? 1e9) ? 'gallop' : 'stand'; KINDS.rider.draw(g, P, t, e, env); },
 };

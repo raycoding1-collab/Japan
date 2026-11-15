@@ -21,6 +21,8 @@ import './ch02_yayoi.js';
 import './ch03_kofun.js';
 import './ch04_asuka.js';
 import './ch05_nara.js';
+import './ch06_heian.js';
+import './ch07_kamakura.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));
@@ -237,8 +239,8 @@ function weather(g, st, t) {
       // suyari-gasumi: the long golden mist bands of Japanese screens and scrolls, drifting across
       const bands = [[0.16, 0.5, 0.012], [0.3, 0.38, -0.008], [0.08, 0.32, 0.006], [0.42, 0.3, -0.01]];
       bands.forEach(([yf, wf, sp], i) => {
-        const w = W * (wf + 0.25), x = fr(hash(i * 3) + t * sp) * (W + w) - w, y = H * yf + Math.sin(t * 0.2 + i) * 6 * u, h = Math.max(14, H * 0.045);
-        g.globalAlpha = 0.55 * k * (amt || 1);
+        const w = W * (wf + 0.25), x = fr(hash(i * 3) + t * sp) * (W + w) - w, y = H * yf + Math.sin(t * 0.2 + i) * 6 * u, h = Math.max(9, H * 0.028);
+        g.globalAlpha = 0.36 * k * (amt || 1);
         const gr = g.createLinearGradient(0, y - h, 0, y + h); gr.addColorStop(0, '#f6dc8a'); gr.addColorStop(0.5, '#d9a94a'); gr.addColorStop(1, '#b8862e');
         g.fillStyle = gr; g.beginPath(); g.moveTo(x + h, y - h * 0.8);
         g.lineTo(x + w - h, y - h * 0.8); g.quadraticCurveTo(x + w + h * 0.4, y, x + w - h, y + h * 0.8); g.lineTo(x + w * 0.62, y + h * 0.8); g.quadraticCurveTo(x + w * 0.56, y + h * 1.6, x + w * 0.48, y + h * 0.8); g.lineTo(x + h, y + h * 0.8); g.quadraticCurveTo(x - h * 0.4, y, x + h, y - h * 0.8); g.fill();

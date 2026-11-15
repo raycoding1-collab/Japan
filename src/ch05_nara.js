@@ -44,11 +44,11 @@ add('foundry', 'main', 465.2, { z: 1, scale: 1.2, popAt: 174.6, foldAt: 180.8, l
 add('person', 'main', 464.6, { v: 'caster', z: 0.6, scale: P2, popAt: 174.9, foldAt: 180.8, act: (t) => ({ lean: 14, head: 8, front: [-100 + Math.sin(t * 2.4) * 12, -30], back: [-90 + Math.sin(t * 2.4) * 12, -30] }) });
 [['naraCarrier', 456.4], ['naraCarrier2', 454.2], ['naraCarrier3', 452]].forEach(([v, a], i) => add('person', 'main', a, { v, z: 2.2 + i * 0.1, scale: P2, popAt: T_BRONZE2 - 1.6 + i * 0.25, foldAt: 181.2, pace: 4.4, move: (t) => clamp((t - T_BRONZE2 + 1.2 - i * 0.2) * 0.7, 0, 5.4 - i * 0.5), act: (t) => (t > T_BRONZE2 + 6.4 - i * 0.6 ? { walk: undefined, front: [-80, -40] } : { front: [-80, -40] }) }));
 // ---- the eye-opening
-add('scaffold', 'main', PLAT, { v: 0, z: 0.5, scale: 0.94, popAt: 180.2, loud: 1.4 });
-add('person', 'main', PLAT - 0.4, { v: 'bodhisena', z: 0.6, scale: P2, y: PLAT_H, popAt: 180.8, flip: true, act: (t) => ({ lean: 8, head: -6, front: [-130 + Math.sin(t * 0.8) * 3, -10], back: [-120, -14] }) });
+add('scaffold', 'main', PLAT, { v: 0, z: 0.5, scale: 0.94, popAt: 180.2, foldAt: 192.4, loud: 1.4 });
+add('person', 'main', PLAT - 0.4, { v: 'bodhisena', z: 0.6, scale: P2, y: PLAT_H, popAt: 180.8, foldAt: 192.2, flip: true, act: (t) => ({ lean: 8, head: -6, front: [-130 + Math.sin(t * 0.8) * 3, -10], back: [-120, -14] }) });
 const CROWD = [];
-for (let i = 0; i < 10; i++) { const a = 489.6 + i * 1.45, v = ['crowdMonk', 'crowdNoble', 'crowdWoman', 'crowdFolk', 'crowdNoble2'][i % 5]; CROWD.push(['main', a]); add('person', 'main', a, { v, z: 2 + (i % 2) * 0.4, scale: P2 * 0.95, flip: true, popAt: T_CORDS - 0.4 + i * 0.12, act: (t) => { const k = sramp(t, T_THOU + 1.6, T_THOU + 2.2); return { head: -18, lean: -2 - k * 4, front: [-150 - k * 10, -20], back: [-20 - k * 120, -10] }; } }); }
-for (let i = 0; i < 14; i++) { const a = 487 + i * 2.2, v = ['crowdFolk', 'crowdMonk', 'crowdWoman', 'crowdNoble'][i % 4]; CROWD.push(['mid', a]); add('person', 'mid', a, { v, scale: 0.62, flip: true, popAt: T_THOU - 0.4 + i * 0.08, act: () => ({ head: -16, front: [-150, -20] }) }); }
+for (let i = 0; i < 10; i++) { const a = 489.6 + i * 1.45, v = ['crowdMonk', 'crowdNoble', 'crowdWoman', 'crowdFolk', 'crowdNoble2'][i % 5]; CROWD.push(['main', a]); add('person', 'main', a, { v, z: 2 + (i % 2) * 0.4, scale: P2 * 0.95, flip: true, popAt: T_CORDS - 0.4 + i * 0.12, foldAt: 191.6 + i * 0.1, act: (t) => { const k = sramp(t, T_THOU + 1.6, T_THOU + 2.2); return { head: -18, lean: -2 - k * 4, front: [-150 - k * 10, -20], back: [-20 - k * 120, -10] }; } }); }
+for (let i = 0; i < 14; i++) { const a = 487 + i * 2.2, v = ['crowdFolk', 'crowdMonk', 'crowdWoman', 'crowdNoble'][i % 4]; CROWD.push(['mid', a]); add('person', 'mid', a, { v, scale: 0.62, flip: true, popAt: T_THOU - 0.4 + i * 0.08, foldAt: 191.8 + i * 0.06, act: () => ({ head: -16, front: [-150, -20] }) }); }
 for (const a of [470, 500, 510]) add('gojunoto', 'mid', a, { v: 1, scale: 0.42 });
 for (const [a, v, s] of [[462, 1, 0.55], [496, 4, 0.6], [516, 1, 0.5]]) add('jmount', 'far', a, { v, scale: s });
 grassRun(450, 470, 3.8, 'main'); grassRun(450, 520, 7, 'front', { s: 2 });
@@ -67,7 +67,7 @@ hook({
     if (near(BUD, c, 60) && t > 180.6) for (const s of [-1, 1]) Sm.push({ a: BUD + s * 7.5, layer: 'main', h: 40, t0: 180.6, size: 0.5, life: 6, every: 0.7, rise: 200, drift: 1.5, alpha: 0.2 });
   },
   over(g, st, t) {
-    if (t < T_BRUSH - 0.4 || t > 192) return;
+    if (t < T_BRUSH - 0.4 || t > 192.1) return;
     const u = st.eu;
     // the brush, held high by the monk, reaching to the eye
     const [hx, hy] = st.place('main', PLAT - 0.4 - 1.0, PLAT_H + 104, t), [ex, ey] = st.place('main', EYE[0] + 0.3, EYE[1] - 2, t), k = sramp(t, T_BRUSH, T_BRUSH + 1);

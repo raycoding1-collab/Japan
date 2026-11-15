@@ -99,6 +99,13 @@ fxGroup(['doll0', 'doll1', 'doll2', 'doll3', 'doll4', 'doll5', 'kiku'], (mk) => 
 export const CHARS = {
   wa: [[[34, 8], [16, 18]], [[8, 32], [44, 30]], [[27, 14], [27, 94]], [[26, 40], [8, 72]], [[29, 44], [42, 60]], [[56, 42], [57, 82]], [[56, 42], [88, 42], [86, 80]], [[58, 78], [86, 78]]],
   hi: [[[30, 10], [30, 92]], [[30, 10], [72, 10], [72, 92]], [[32, 50], [70, 50]], [[32, 90], [70, 90]]],
+  i: [[[30, 20], [26, 60], [34, 74]], [[66, 30], [72, 54]]],
+  ro: [[[30, 18], [62, 18], [36, 52], [60, 48], [68, 64], [58, 80], [36, 82]]],
+  ha: [[[22, 16], [20, 80]], [[40, 30], [78, 30]], [[60, 14], [60, 72], [50, 84], [40, 76], [54, 66], [78, 82]]],
+  ni: [[[22, 16], [20, 80]], [[44, 30], [72, 28]], [[44, 66], [56, 76], [76, 74]]],
+  ho: [[[22, 16], [20, 80]], [[40, 22], [74, 22]], [[40, 40], [74, 40]], [[58, 22], [58, 74], [48, 84], [40, 76], [54, 68], [78, 82]]],
+  he: [[[14, 60], [36, 36], [86, 72]]],
+  to: [[[36, 14], [44, 40]], [[66, 32], [34, 58], [34, 76], [52, 84], [78, 80]]],
   hon: [[[10, 34], [90, 32]], [[50, 6], [50, 96]], [[48, 36], [12, 76]], [[52, 36], [90, 78]], [[34, 72], [66, 72]]],
 };
 // k counts strokes written so far (fractional: the last one is still being drawn).
@@ -132,5 +139,25 @@ fxGroup(['washi', 'letter', 'jointA', 'jointB', 'redsun', 'gilt'], (mk) => {
     .piece([[-14, -10], [14, -10], [12, -56], [6, -64], [-6, -64], [-12, -56]], '#c89a3a', { round: 6, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(255,240,190,.35)'; g.fillRect(-12, -56, 8, 40); } })
     .piece(ellipse(0, -72, 8, 9, 12), '#d4a840', { round: 4, lift: 1.4, paint: (g) => { g.fillStyle = 'rgba(80,50,10,.6)'; g.beginPath(); g.arc(0, -80, 5, Math.PI, 0); g.fill(); } })
     .finish({ shadowBlur: 3 });
+  return S;
+});
+
+// ----------------------------------------------------------------- Fūjin, god of wind ---
+// After the old folding screens: a green god crouched on a storm cloud, his bag of winds billowing over him.
+fxGroup(['fujin'], (mk) => {
+  const r = rng(9400), S = {}, sh = mk('fujin', [-240, -230, 240, 190], { pad: 10 }), skin = '#6a9a7a';
+  sh.piece([[-220, 150], [-200, 100], [-150, 80], [-100, 96], [-60, 70], [0, 84], [60, 66], [120, 90], [170, 76], [216, 110], [224, 160], [150, 176], [60, 168], [-40, 180], [-140, 172]], '#2e3038', { round: 18, rough: 3, seg: 12, paint: (g) => { g.strokeStyle = 'rgba(150,150,170,.35)'; g.lineWidth = 3; for (let k = 0; k < 6; k++) { g.beginPath(); g.arc(-160 + k * 64, 130, 20 + (k % 2) * 8, 3.4, 6.0); g.stroke(); } } });
+  // the bag of winds: a great white ribbon arching overhead, held in both hands
+  const bag = []; for (let i = 0; i <= 20; i++) { const a = Math.PI * (1 - i / 20), rx = 200, ry = 200; bag.push([Math.cos(a) * rx, -10 - Math.sin(a) * ry]); }
+  const bagIn = []; for (let i = 20; i >= 0; i--) { const a = Math.PI * (1 - i / 20); bagIn.push([Math.cos(a) * 160, -10 - Math.sin(a) * 150 - (i > 6 && i < 14 ? 6 : 0)]); }
+  sh.piece([...bag, ...bagIn], '#f2f0ea', { round: 8, rough: 1.4, seg: 14, paint: (g) => { g.strokeStyle = 'rgba(120,130,150,.45)'; g.lineWidth = 2.4; for (let k = 0; k < 5; k++) { g.beginPath(); g.arc(0, -10, 168 + k * 7, Math.PI * 1.05, Math.PI * 1.95); g.stroke(); } } });
+  // the body: crouched, arms up to the bag, legs kicking in the cloud
+  sh.piece([[-46, 84], [-60, 40], [-50, -10], [-20, -30], [20, -30], [50, -10], [60, 40], [44, 84]], skin, { round: 16, lift: 1.6, paint: (g) => { g.strokeStyle = 'rgba(30,60,40,.45)'; g.lineWidth = 2; g.beginPath(); g.moveTo(-20, 0); g.quadraticCurveTo(0, 14, 20, 0); g.stroke(); g.beginPath(); g.moveTo(-26, 30); g.quadraticCurveTo(0, 40, 26, 30); g.stroke(); } });
+  sh.piece([[-40, 50], [44, 50], [56, 86], [-50, 86]], '#e8dcc0', { round: 6, lift: 1.4, paint: (g) => { g.strokeStyle = 'rgba(160,60,40,.5)'; g.lineWidth = 2; for (let x = -40; x < 50; x += 10) { g.beginPath(); g.moveTo(x, 52); g.lineTo(x + 6, 84); g.stroke(); } } });
+  for (const s2 of [-1, 1]) sh.piece([[s2 * 40, -16], [s2 * 96, -70], [s2 * 150, -120], [s2 * 166, -108], [s2 * 112, -54], [s2 * 56, 6]], skin, { round: 10, lift: 1.4 });
+  for (const s2 of [-1, 1]) sh.piece([[s2 * 30, 80], [s2 * 80, 104], [s2 * 120, 92], [s2 * 128, 108], [s2 * 82, 126], [s2 * 26, 100]], skin, { round: 10, lift: 1.2 });
+  sh.piece([[-30, -24], [-34, -64], [-18, -84], [18, -84], [34, -64], [30, -24]], skin, { round: 12, lift: 1.8, paint: (g) => { g.fillStyle = '#f8f4ea'; for (const s2 of [-1, 1]) { g.beginPath(); g.ellipse(s2 * 12, -60, 8, 6, 0, 0, 7); g.fill(); g.fillStyle = '#1a1a1a'; g.beginPath(); g.arc(s2 * 12 + 2, -59, 3, 0, 7); g.fill(); g.fillStyle = '#f8f4ea'; } g.fillStyle = '#5a1e1a'; g.beginPath(); g.ellipse(0, -38, 13, 8, 0, 0, Math.PI); g.fill(); g.fillStyle = '#f8f4ea'; g.fillRect(-10, -38, 20, 3); } });
+  sh.piece([[-36, -70], [-50, -96], [-34, -92], [-30, -118], [-12, -100], [0, -126], [12, -100], [30, -118], [34, -92], [50, -96], [36, -70], [20, -84], [-20, -84]], '#b8402a', { round: 3, lift: 1.6 });
+  S.fujin = sh.finish({ shadowBlur: 8 });
   return S;
 });
