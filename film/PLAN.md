@@ -25,7 +25,7 @@ prints, kaizen, the animators, the sushi masters.
 - [x] Full sweep (every 3 s) and its fixes
 - [x] Phone and phone-sideways sheets for every chapter; automated checks (scan 0 errors at both sizes, playtest, endtest, inapp x4, starttrace; memory: see report)
 - [x] Share image, icon, README
-- [ ] Publish (GitHub Pages + TinyURL): needs the user's go-ahead for the first gh-pages push
+- [x] Published: https://raycoding1-collab.github.io/Japan/ (gh-pages), short link https://tinyurl.com/mended-with-gold-japan
 
 ## Architecture
 - `src/film_api.js`: shared tables (CAM, ZONES, SEAS, BUMPS, SKY/AMB/GRADE, ERAS, WX, NIGHTS, SUNS, ZOOM, FLOCKS, PAPER_SUN, MILKY, SEAMS) and helpers (add, hook, card, closeUp, drop...).

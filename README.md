@@ -19,7 +19,8 @@ cherry trees where the water stopped); and mended with gold.
 
 ## Watch it
 
-https://raycoding1-collab.github.io/Japan/ (with sound). Built to be opened anywhere, including from an
+**https://tinyurl.com/mended-with-gold-japan** (with sound), which redirects to
+https://raycoding1-collab.github.io/Japan/. Built to be opened anywhere, including from an
 Instagram DM on iPhone and Android. It is published from the `gh-pages` branch: run
 `tools/publish_pages.sh` to update it.
 
