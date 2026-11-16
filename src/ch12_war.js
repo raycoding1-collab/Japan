@@ -66,15 +66,15 @@ add('person', 'main', 1531, { v: 'civilian2', z: 2, scale: P2, popAt: 544.3, fol
 
 // ---- surrender: the radio
 const T_SUR = ev('surrendered', 557.0);
-add('radioset', 'main', 1547.6, { z: 1.4, scale: 1.1, popAt: 554.8 });
+add('radioset', 'main', 1547.6, { z: 1.4, scale: 1.1, popAt: 554.8, foldAt: 576.4 });
 [[1543.6, 'civilian'], [1545.6, 'civilian2'], [1550, 'civilianKid'], [1552, 'civilian']].forEach(([a, v], i) => add('person', 'main', a, { v, z: 2 + i * 0.1, scale: P2, flip: a > 1548, popAt: 555 + i * 0.12, foldAt: 563 + i * 0.1, act: (t) => ({ head: 10 + sramp(t, T_SUR, T_SUR + 1) * 16, lean: 4 + sramp(t, T_SUR, T_SUR + 1) * 6 }) }));
 grassRun(1516, 1560, 5, 'main', { skip: (a) => a > 1518 && a < 1554 });
 
 // ---- Sadako and the cranes
 const T_SAD = ev('sadako', 565.4), T_CRANES = ev('cranes', 569.4), T_PEACE = ev('wishpeace', 572.4);
-add('hospital', 'main', 1567.6, { z: 0.3, scale: 0.9, popAt: 562.6, loud: 1.2, cranes: (t) => sramp(t, T_SAD, T_CRANES + 1.2) * 14 * (1 - sramp(t, T_PEACE, T_PEACE + 1.2)) });
-add('person', 'main', 1565.4, { v: 'sadako', z: 0.5, scale: P2 * 0.85, y: 46, popAt: T_SAD - 1.4, act: (t) => ({ head: t > T_PEACE ? -24 : 14, lean: 6, front: [-60 + Math.sin(t * 3) * 8, -60], back: [-50 + Math.sin(t * 3 + 1) * 8, -60] }) });
-add('person', 'main', 1572.4, { v: 'sadakoMother', z: 0.45, scale: P2 * 0.9, y: 6, flip: true, popAt: T_SAD - 0.6, act: (t) => ({ head: t > T_PEACE ? -18 : 6, lean: 4 }) });
+add('hospital', 'main', 1567.6, { z: 0.3, scale: 0.9, popAt: 562.6, foldAt: 578.6, loud: 1.2, cranes: (t) => sramp(t, T_SAD, T_CRANES + 1.2) * 14 * (1 - sramp(t, T_PEACE, T_PEACE + 1.2)) });
+add('person', 'main', 1565.4, { v: 'sadako', z: 0.5, scale: P2 * 0.85, y: 46, popAt: T_SAD - 1.4, foldAt: 578.4, act: (t) => ({ head: t > T_PEACE ? -24 : 14, lean: 6, front: [-60 + Math.sin(t * 3) * 8, -60], back: [-50 + Math.sin(t * 3 + 1) * 8, -60] }) });
+add('person', 'main', 1572.4, { v: 'sadakoMother', z: 0.45, scale: P2 * 0.9, y: 6, flip: true, popAt: T_SAD - 0.6, foldAt: 578.5, act: (t) => ({ head: t > T_PEACE ? -18 : 6, lean: 4 }) });
 grassRun(1560, 1580, 4.4, 'main', { skip: (a) => a > 1562 && a < 1574 });
 grassRun(1436, 1580, 7, 'front', { s: 2, skip: (a) => a > 1474 && a < 1492 });
 

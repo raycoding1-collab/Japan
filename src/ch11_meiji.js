@@ -87,8 +87,8 @@ for (const a of [1390.8, 1403.4]) add('palm', 'main', a, { z: 0, scale: 0.8 });
 
 // ---- Tsushima
 const T_RUS = ev('russia', 503.8);
-add('battleship', 'main', 1412.6, { v: 0, z: 0.8, scale: 0.78, y: 2, popAt: 501.6, flagZ: 1, move: (t) => clamp((t - 502) * 0.4, 0, 2) });
-add('battleship', 'main', 1419.4, { v: 0, z: 0.7, scale: 0.66, y: 2, popAt: 502 });
+add('battleship', 'main', 1412.6, { v: 0, z: 0.8, scale: 0.78, y: 2, popAt: 501.6, foldAt: 512.6, flagZ: 1, move: (t) => clamp((t - 502) * 0.4, 0, 2) });
+add('battleship', 'main', 1419.4, { v: 0, z: 0.7, scale: 0.66, y: 2, popAt: 502, foldAt: 512.8 });
 add('battleship', 'main', 1427.6, { v: 1, z: 0.8, scale: 0.72, y: 2, flip: true, popAt: 502.2, foldAt: T_RUS + 0.6 });
 add('battleship', 'main', 1434.0, { v: 1, z: 0.7, scale: 0.6, y: 2, flip: true, popAt: 502.4, foldAt: T_RUS + 1.3 });
 for (let a = 1406.0; a < 1438.0; a += 3.2) add('wave', 'front', a, { v: (R() * 4) | 0, scale: 1.3 + R() * 0.3 });

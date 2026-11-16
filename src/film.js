@@ -28,6 +28,8 @@ import './ch08_muromachi.js';
 import './ch09_sengoku.js';
 import './ch10_edo.js';
 import './ch11_meiji.js';
+import './ch12_war.js';
+import './ch13_miracle.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));

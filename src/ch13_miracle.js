@@ -73,9 +73,9 @@ add('portal', 'main', 1681.2, { z: 1.6, scale: 0.9, popAt: 619.4 });
 add('portal', 'main', 1705.2, { z: 1.6, scale: 0.9, flip: true, popAt: 619.6 });
 for (const a of [1685.6, 1689.6, 1693.6, 1697.6, 1701.6]) add('pier', 'main', a, { z: 0.8, scale: 1, popAt: 619.6 + (a - 1685) * 0.02 });
 const SK_Y = 152, PORT = [1683.4, 1703.2];
-add('shinkansen', 'main', 1683.4, { v: 0, z: 1.2, scale: 0.8, y: SK_Y, cars: 4, portal: PORT[0], portalEnd: PORT[1], move: (t) => clamp((t - T_SK + 0.6) * 9, 0, 66) });
-add('shinkansen', 'main', 1683.4, { v: 3, z: 1.2, scale: 0.8, y: SK_Y, cars: 2, portal: PORT[0], portalEnd: PORT[1], from: T_GEN - 0.2, move: (t) => clamp((t - T_GEN) * 14, 0, 46) });
-add('shinkansen', 'main', 1683.4, { v: 5, z: 1.2, scale: 0.8, y: SK_Y, cars: 2, portal: PORT[0], portalEnd: PORT[1], from: T_GEN + 2.8, move: (t) => clamp((t - T_GEN - 3) * 14, 0, 46) });
+add('shinkansen', 'main', PORT[0] - 8, { v: 0, z: 1.2, scale: 0.8, y: SK_Y, cars: 4, portal: PORT[0], portalEnd: PORT[1], from: T_SK - 1.4, to: T_SK + 8.6, move: (t) => clamp((t - T_SK + 1.2) * 9, 0, 74) });
+add('shinkansen', 'main', PORT[0] - 10, { v: 3, z: 1.2, scale: 0.8, y: SK_Y, cars: 2, portal: PORT[0], portalEnd: PORT[1], from: T_GEN - 0.2, to: T_GEN + 3.8, move: (t) => clamp((t - T_GEN) * 14, 0, 56) });
+add('shinkansen', 'main', PORT[0] - 10, { v: 5, z: 1.2, scale: 0.8, y: SK_Y, cars: 2, portal: PORT[0], portalEnd: PORT[1], from: T_GEN + 2.8, to: T_GEN + 6.8, move: (t) => clamp((t - T_GEN - 3) * 14, 0, 56) });
 add('jmount', 'far', 1700, { v: 2, scale: 0.55 });
 [1708.4, 1710.2, 1712].forEach((a, i) => add('person', 'main', a, { v: 'tessei', z: 2, scale: P2, flip: true, popAt: T_GEN - 0.6 + i * 0.1, act: (t) => { const b = Math.max(0, Math.sin((t - T_GEN) * 1.6)) ** 2 * (t > T_GEN ? 1 : 0); return { lean: 6 + b * 40, head: 6 + b * 10 }; } }));
 grassRun(1652, 1712, 4.6, 'main', { skip: (a) => a > 1666 && a < 1681 });
@@ -101,7 +101,7 @@ hook({
     if (near(1694, G.c, 60) && t > 619.4) { const k = sramp(t, 619.6, 620.4); G.run(1683, 1703.6, (a0, a1) => { G.arc(a0, a1, 140, 12 * k, 'rgba(190,186,176,.98)'); G.arc(a0, a1, 146, 2, 'rgba(120,116,108,.6)'); }); }
   },
   over(g, st, t) {
-    const { W, H } = st, u = st.eu, p = por(st), cx = W * (p ? 0.5 : 0.27), yH = (k) => H * lerp(-0.4, p ? 0.07 : 0.1, k), sc = p ? 0.6 : 0.8;
+    const { W, H } = st, u = st.eu, p = por(st), cx = W * (p ? 0.5 : 0.25), yH = (k) => H * lerp(-0.4, p ? 0.07 : 0.08, k), sc = p ? 0.66 : 0.98;
     const label = (g2, txt, x, y, size = 16, col = 'rgba(40,26,18,.88)') => { g2.font = `italic 400 ${size}px Fraunces, Georgia, serif`; g2.textAlign = 'center'; g2.fillStyle = col; g2.fillText(txt, x, y); };
     // the new constitution
     if (t > T_CON - 0.6 && t < 584.4) card(st, g, cx, yH(drop(t, T_CON - 0.4, 583)) + 120 * u * sc, sc, Math.sin(t * 0.5) * DEG, (g2) => { put(g2, st.fx.washi, 0.3, 4, 6); g2.save(); g2.scale(0.9, 0.9); g2.fillStyle = 'rgba(40,26,18,.9)'; g2.fillRect(-90, -120, 180, 3); g2.restore(); g2.strokeStyle = 'rgba(30,22,18,.75)'; g2.lineWidth = 1.4; for (let c = 0; c < 10; c++) for (let r = 0; r < 12; r++) { if (hash(c * 31 + r) < 0.1) continue; g2.beginPath(); g2.moveTo(80 - c * 17, -100 + r * 18); g2.lineTo(80 - c * 17 + (hash(c + r * 7) - 0.5) * 6, -90 + r * 18); g2.stroke(); } g2.fillStyle = 'rgba(178,40,32,.85)'; g2.fillRect(-100, 96, 18, 18); }, 1, 110);
@@ -131,7 +131,14 @@ hook({
     // the bubble: golden, rising over the city, and then gone
     if (t > 654.8 && t < T_BURST + 1.2) {
       const [x0, y0] = st.place('main', 1754, 300, t), k = sramp(t, 654.8, 657.4), x = x0 + Math.sin(t * 0.7) * 30 * u, y = y0 - k * 120 * u, r = (60 + 70 * k) * u * (1 + 0.03 * Math.sin(t * 5));
-      if (t < T_BURST) { g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r); gr.addColorStop(0, 'rgba(255,240,200,.25)'); gr.addColorStop(0.75, 'rgba(255,200,120,.12)'); gr.addColorStop(0.95, 'rgba(255,230,170,.5)'); gr.addColorStop(1, 'rgba(255,230,170,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.strokeStyle = 'rgba(200,160,255,.35)'; g.lineWidth = 2 * u; g.beginPath(); g.arc(x, y, r * 0.96, 3.6, 5.2); g.stroke(); g.restore(); }
+      if (t < T_BURST) {
+        g.save(); g.globalCompositeOperation = 'lighter';
+        st.stamp(g, st.dot(255, 190, 90), x, y, r * 1.6, 0.35);
+        const gr = g.createRadialGradient(x, y, r * 0.55, x, y, r); gr.addColorStop(0, 'rgba(255,190,80,0)'); gr.addColorStop(0.8, 'rgba(255,190,90,.22)'); gr.addColorStop(0.97, 'rgba(255,214,130,.85)'); gr.addColorStop(1, 'rgba(255,214,130,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+        g.lineWidth = 3.2 * u; for (const [a0, a1, c] of [[3.4, 4.6, 'rgba(255,120,220,.55)'], [4.7, 5.6, 'rgba(120,230,255,.45)'], [0.2, 1.3, 'rgba(200,255,160,.35)'], [1.5, 2.6, 'rgba(255,170,90,.5)']]) { g.strokeStyle = c; g.beginPath(); g.arc(x, y, r * 0.93, a0 + t * 0.2, a1 + t * 0.2); g.stroke(); }
+        g.fillStyle = 'rgba(255,250,235,.85)'; g.beginPath(); g.ellipse(x - r * 0.42, y - r * 0.44, r * 0.16, r * 0.07, -0.7, 0, 7); g.fill(); g.beginPath(); g.ellipse(x + r * 0.5, y + r * 0.46, r * 0.06, r * 0.03, -0.7, 0, 7); g.fill();
+        g.restore();
+      }
       else { const age = t - T_BURST; g.globalCompositeOperation = 'lighter'; for (let i = 0; i < 40; i++) { const a = (i / 40) * Math.PI * 2, d = r * (1 + age * 2.4); st.stamp(g, st.dot(255, 220, 160), x + Math.cos(a) * d, y + Math.sin(a) * d + age * age * 160 * u, 4 * u, 1 - age); } g.globalCompositeOperation = 'source-over'; }
     }
   },
