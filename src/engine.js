@@ -276,6 +276,8 @@ export class Stage {
     const prof = this.film.profile[e.layer];
     const tau = t - e.tPop;
     if (e.popAt !== undefined && tau < -2.5 && e.repopAt === undefined) return; // things due later are not lying about yet: a timed piece lies flat only just before it springs up
+    // a wide piece, a mountain or anything far away does not lie flat at all: its flat strip would stick straight off the curve
+    if (tau < -0.35 && e.repopAt === undefined && (e.layer === 'far' || (e.wide || 0) >= 6 || e.kind === 'jmount')) return;
     let p = spring(tau, 10.5, 0.46), wob = tau > 0 ? Math.exp(-2.1 * tau) * Math.sin(8.2 * tau) * 11 : 0;
     const fold = e.foldAt ?? e.to;
     if (fold !== undefined && t > fold) { const k = clamp((t - fold) / 0.26); p *= 1 - k * k; wob = 0; }
@@ -334,7 +336,7 @@ export class Stage {
     const zoom = (S.zoom || 1) * this.zm, pull = S.pull || 0;
     const fit = Math.min(W * 0.36, H * 0.28) / this.R;
     const z = lerp(zoom, fit, smooth(pull));
-    const top = lerp(this.hy + breathe + (S.shake ? S.shake * Math.sin(t * 43) * H * 0.006 : 0), H * 0.52 - this.R * z, smooth(pull));
+    const top = lerp(this.hy + breathe + (S.shake ? S.shake * Math.sin(t * 43) * H * 0.006 : 0), H * (0.52 + (S.drop || 0)) - this.R * z, smooth(pull));
     const u = this.u * z, cy = top + this.R * z;
     this.eu = u; this.ecy = cy; this.eR = this.R * z; this.full = pull > 0.02; this.pullK = smooth(pull);
     this.visE = this.full ? 180 : Math.asin(Math.min(1, (W / 2) / this.eR)) / DEG;

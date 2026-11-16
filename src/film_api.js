@@ -75,7 +75,7 @@ export function closeUp(st, g, t, t0, t1, fn, o = {}) {
   g.restore();
   const base = Math.min(W * 0.62, H * 0.56) / 270 * (o.scale || 1), wide = W > H;
   const cx = W * (o.x ?? 0.5), cy = H * (wide ? (o.y ?? 0.44) : (o.yp ?? o.y ?? 0.42));
-  g.save(); g.translate(cx, cy + (1 - Math.min(1, up)) * H * 0.9 + out * H * 0.9); g.rotate((1 - Math.min(1, up)) * 0.25 - 0.03 + Math.sin(t * 0.5) * 0.008); g.scale(base, base);
+  g.save(); g.translate(cx, cy + (1 - Math.min(1, up)) * H * 0.9 - out * out * H * 1.05); g.rotate((1 - Math.min(1, up)) * 0.25 - 0.03 + Math.sin(t * 0.5) * 0.008); g.scale(base, base);
   fn(g, clamp(up) * (1 - out));
   g.restore();
   return veil;

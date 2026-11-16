@@ -57,8 +57,8 @@ ZOOM.push([426, 428, 431.6, 433.6, 0.22], [445.6, 447.6, 451.6, 453.4, -0.06]);
 // ---- peace: cherry blossom, a party under the trees, Fuji on the horizon
 const T_PEACE = ev('peace', 391.4);
 [[1037, 0], [1043.6, 1], [1050.4, 0], [1055, 2]].forEach(([a, v], i) => add('sakura', 'main', a, { v, z: 0, scale: 0.95, bloom: (t) => sramp(t, T_PEACE + i * 0.25, T_PEACE + 1.4 + i * 0.25) }));
-add('person', 'main', 1040.2, { v: 'hanamiSam', z: 2, scale: P2, popAt: T_PEACE, act: (t) => ({ head: -10, front: [-80 + Math.sin(t * 0.9) * 6, -60] }) });
-add('person', 'main', 1042.4, { v: 'hanamiWoman', z: 2.1, scale: P2, flip: true, popAt: T_PEACE + 0.2, act: (t) => ({ head: 6 }) });
+add('person', 'main', 1038.6, { v: 'hanamiSam', z: 2, scale: P2, popAt: T_PEACE, act: (t) => ({ head: -10, front: [-80 + Math.sin(t * 0.9) * 6, -60] }) });
+add('person', 'main', 1042.8, { v: 'hanamiWoman', z: 2.1, scale: P2, flip: true, popAt: T_PEACE + 0.2, act: (t) => ({ head: 6 }) });
 add('person', 'main', 1046.6, { v: 'hanamiDancer', z: 2, scale: P2, popAt: T_PEACE + 0.4, act: (t) => { const k = Math.sin(t * 2.2); return { lean: k * 6, head: -6 + k * 6, front: [-150 + k * 30, -20], back: [-60 - k * 30, -30] }; } });
 add('jmount', 'far', 1066, { v: 2, scale: 0.5 });
 for (const [a, v, s] of [[1040, 1, 0.5], [1086, 4, 0.55]]) add('jmount', 'far', a, { v, scale: s });
@@ -115,7 +115,7 @@ grassRun(1150, 1190, 4, 'main', { skip: (a) => a > 1153 && a < 1188 });
 
 // ---- the Great Wave
 const T_WAVE = ev('wave', 446.4), WAVE_A = 1208.6;
-add('greatwave', 'main', WAVE_A, { z: 1, scale: 0.86, y: 6, popAt: T_WAVE - 0.6, loud: 2.6, wide: 18, rise: (t) => clamp(sramp(t, T_WAVE - 0.4, T_WAVE + 2.2) * 1.02) });
+add('greatwave', 'main', WAVE_A, { z: 1, scale: 0.86, y: 6, popAt: T_WAVE - 0.6, loud: 2.6, wide: 18, rise: (t) => clamp(sramp(t, T_WAVE - 0.4, T_WAVE + 2.2) * 1.02) * (1 - sramp(t, T_EU - 1.4, T_EU + 1.2)) });
 add('oshiokuri', 'main', 1200.8, { z: 0.8, scale: 0.8, y: -4, popAt: T_WAVE - 0.2 });
 add('oshiokuri', 'main', 1213.6, { z: 1.4, scale: 0.82, y: -8, popAt: T_WAVE + 0.2 });
 add('oshiokuri', 'main', 1224.6, { z: 0.8, scale: 0.7, y: -4, popAt: T_WAVE + 0.4 });

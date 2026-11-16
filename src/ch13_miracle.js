@@ -57,7 +57,7 @@ grassRun(1580, 1620, 5, 'main', { skip: (a) => a > 1581 && a < 1618 });
 const T_TOY = ev('toyota', 590.0), T_CORD = ev('cord', 594.2), T_FIX = ev('fix', 596.2), T_KAI = ev('kaizen', 601.4);
 const line = (t) => 0.42 * (clamp(t, 589.5, T_CORD) - 589.5 + clamp(t, T_FIX + 1.2, 603.4) - (T_FIX + 1.2));
 add('factoryhall', 'main', 1636, { z: -0.5, scale: 0.92, popAt: 588.6, lamp: () => 1, loud: 1.6, wide: 8 });
-add('conveyor', 'main', 1636, { z: 0.6, scale: 0.86, popAt: 589, stop: (t) => sramp(t, T_CORD, T_CORD + 0.2) * (1 - sramp(t, T_FIX + 1, T_FIX + 1.2)) });
+add('conveyor', 'main', 1636, { z: 0.6, scale: 0.86, popAt: 589, from: 588.5, stop: (t) => sramp(t, T_CORD, T_CORD + 0.2) * (1 - sramp(t, T_FIX + 1, T_FIX + 1.2)) });
 [1626.4, 1631.6, 1636.8, 1642].forEach((a, i) => add('corolla', 'main', a, { v: i, z: 0.7, scale: 0.86, y: 19, popAt: 589.2 + i * 0.1, move: line }));
 add('person', 'main', 1629, { v: 'lineWorker', z: 1, scale: P2, popAt: 589.6, act: (t) => { const k = sramp(t, T_CORD - 0.6, T_CORD) * (1 - sramp(t, T_CORD + 1.2, T_CORD + 1.8)); return { head: -10 - k * 20, front: [-40 - k * 140, -20], back: [-20, -20] }; } });
 add('person', 'main', 1634.4, { v: 'lineWorker2', z: 1, scale: P2, popAt: 589.8, act: (t) => ({ lean: 14 + sramp(t, T_CORD + 0.4, T_CORD + 1) * 16, head: 14, front: [-70 + Math.sin(t * 4) * 8, -40] }) });

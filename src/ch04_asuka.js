@@ -125,11 +125,11 @@ const relayLabel = (g, st, t, a, yr, k, i) => { const [x, y] = st.place('main', 
 hook({
   sky(g, st, t) {
     // the sun rises out of the sea, huge and red, behind the edge of the world
-    if (t > T_SUN - 1 && t < 140) {
-      const { W, H } = st, u = st.eu, k = sramp(t, T_SUN - 0.5, T_SUN + 5.5), out = sramp(t, 136, 139.5), p = por(st);
-      const x = W * (p ? 0.5 : 0.56), y = lerp(st.hy + 110 * u, st.hy - H * (p ? 0.3 : 0.34), k) - out * H * 0.5, rr = Math.min(W, H) * (p ? 0.2 : 0.17);
+    if (t > T_SUN - 1 && t < 139) {
+      const { W, H } = st, u = st.eu, k = sramp(t, T_SUN - 0.5, T_SUN + 5.5), out = sramp(t, 135.6, 138.8), p = por(st);
+      const x = W * (p ? 0.5 : 0.56), y = lerp(st.hy + 110 * u, st.hy - H * (p ? 0.3 : 0.34), k) - out * H * 0.8, rr = Math.min(W, H) * (p ? 0.2 : 0.17);
       g.globalCompositeOperation = 'screen'; const gl = g.createRadialGradient(x, y, 0, x, y, rr * 4); gl.addColorStop(0, `rgba(255,150,90,${0.5 * (1 - out)})`); gl.addColorStop(0.4, `rgba(255,110,70,${0.18 * (1 - out)})`); gl.addColorStop(1, 'rgba(255,100,60,0)'); g.fillStyle = gl; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'source-over';
-      g.save(); g.translate(x, y); g.rotate(t * 0.01); g.scale(rr / 130, rr / 130); put(g, st.fx.redsun, 0); g.restore();
+      g.save(); g.globalAlpha = 1 - out; g.translate(x, y); g.rotate(t * 0.01); g.scale(rr / 130, rr / 130); put(g, st.fx.redsun, 0); g.restore();
     }
   },
   over(g, st, t) {

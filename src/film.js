@@ -107,7 +107,7 @@ function state(t, stage) {
     sun, cloud: 1 - nightK * 0.4, snow: lk.snow,
     motes: lk.motes, moteColor: lk.mote,
     emit: true, screen: 0, blink: 0, bloom: 0.16 + 0.34 * nightK, grade: lk.grade, rays: 1,
-    zoom, pull, rustle: 0, shake: Math.exp(-(((t - ev('quake', -9) + 0.3) / 0.6) ** 2)) * 1.2,
+    zoom, pull, drop: 0.05 * sramp(t, ev('title', 1e6) - 1.5, ev('title', 1e6) + 2.5), rustle: 0, shake: Math.exp(-(((t - ev('quake', -9) + 0.3) / 0.6) ** 2)) * 1.2,
     fade: Math.max(1 - sramp(t, 0.1, 3.4), sramp(t, DURATION - 3.5, DURATION)),
   };
 }
@@ -253,7 +253,7 @@ function weather(g, st, t) {
         g.globalAlpha = 0.36 * k * (amt || 1);
         const gr = g.createLinearGradient(0, y - h, 0, y + h); gr.addColorStop(0, '#f6dc8a'); gr.addColorStop(0.5, '#d9a94a'); gr.addColorStop(1, '#b8862e');
         g.fillStyle = gr; g.beginPath(); g.moveTo(x + h, y - h * 0.8);
-        g.lineTo(x + w - h, y - h * 0.8); g.quadraticCurveTo(x + w + h * 0.4, y, x + w - h, y + h * 0.8); g.lineTo(x + w * 0.62, y + h * 0.8); g.quadraticCurveTo(x + w * 0.56, y + h * 1.6, x + w * 0.48, y + h * 0.8); g.lineTo(x + h, y + h * 0.8); g.quadraticCurveTo(x - h * 0.4, y, x + h, y - h * 0.8); g.fill();
+        g.lineTo(x + w - h, y - h * 0.8); g.quadraticCurveTo(x + w + h * 0.4, y, x + w - h, y + h * 0.8); g.lineTo(x + w * 0.62, y + h * 0.8); g.quadraticCurveTo(x + w * 0.56, y + h * 1.6, x + w * 0.48, y + h * 0.8); g.lineTo(x + h, y + h * 0.8); g.quadraticCurveTo(x - h * 0.4, y, x + h, y - h * 0.8); g.fill(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5 * k * (amt || 1) * (0.8 + 0.2 * Math.sin(t * 0.7 + i * 2)); const sh = g.createLinearGradient(x, 0, x + w, 0); sh.addColorStop(0, 'rgba(255,200,90,0)'); sh.addColorStop(0.5, 'rgba(255,196,96,1)'); sh.addColorStop(1, 'rgba(255,200,90,0)'); g.fillStyle = sh; g.fill(); g.globalCompositeOperation = 'source-over';
         g.globalAlpha = 0.28 * k; g.fillStyle = '#fff4cc'; for (let j = 0; j < 14; j++) g.fillRect(x + hash(i * 31 + j) * w, y - h * 0.6 + hash(j * 7 + i) * h * 1.2, 3 * pu, 2 * pu);
         g.globalAlpha = 1;
       });
