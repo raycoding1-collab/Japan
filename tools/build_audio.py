@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Build the whole soundtrack: narration, an original score that grows with
-history, ambience for every era, and timed effects. One mixed file; the picture
-follows it.
+"""Build the whole soundtrack: narration, an original score on Japanese
+instruments (shakuhachi, koto, shamisen, biwa, taiko, shō, temple bell) that
+grows into piano, city pop and an orchestra, ambience for every era, and timed
+effects. One mixed file; the picture follows it.
 
 usage: /home/user/tts/venv/bin/python tools/build_audio.py film/film.json
 writes assets/audio/film.mp3 and src/timeline.js
@@ -329,11 +330,12 @@ def line(notes, beat=1.0, oct=0, kind='erhu', vel=1.0, glide=0.05):
     f[f == 0] = first
     a = 1 - np.exp(-1 / (glide * SR)); lf = np.log(f)
     lf = signal.lfilter([a], [1, a - 1], lf, zi=signal.lfilter_zi([a], [1, a - 1]) * lf[0])[0]
-    att = {'erhu': 0.07, 'dizi': 0.035, 'xiao': 0.09, 'bone': 0.06}[kind]
+    att = {'erhu': 0.07, 'dizi': 0.035, 'xiao': 0.09, 'bone': 0.06, 'shaku': 0.11}[kind]
     b2 = 1 - np.exp(-1 / (att * SR)); env = signal.lfilter([b2], [1, b2 - 1], on)
     idx = np.arange(n); last = np.maximum.accumulate(np.where(starts, idx, 0)); since = (idx - last) / SR
-    depth = {'erhu': 0.009, 'dizi': 0.005, 'xiao': 0.004, 'bone': 0.003}[kind] * np.clip((since - 0.2) / 0.35, 0, 1)
-    fs = np.exp(lf) * (1 + depth * np.sin(TAU * (5.6 if kind == 'erhu' else 4.8) * t))
+    depth = {'erhu': 0.009, 'dizi': 0.005, 'xiao': 0.004, 'bone': 0.003, 'shaku': 0.007}[kind] * np.clip((since - (0.5 if kind == 'shaku' else 0.2)) / 0.5, 0, 1)
+    fs = np.exp(lf) * (1 + depth * np.sin(TAU * (5.6 if kind == 'erhu' else 3.9 if kind == 'shaku' else 4.8) * t))
+    if kind == 'shaku': fs *= 1 - 0.028 * np.exp(-since / 0.16)   # meri: each note blown in a little flat, then lifted
     if kind == 'bone': fs *= 1 + 0.006 * (slow_noise(n, 1.5, rs.randint(1e6)) - 0.5)
     ph = TAU * np.cumsum(fs) / SR; y = np.zeros(n)
     if kind == 'erhu':
@@ -349,32 +351,182 @@ def line(notes, beat=1.0, oct=0, kind='erhu', vel=1.0, glide=0.05):
             buzz = 1 + (0.5 * (slow_noise(n, 30, rs.randint(1e6)) - 0.5) if k >= 3 else 0)
             y += a_ * buzz * np.sin(k * ph + k)
         y = y * 0.5 + bp(rs.randn(n), max(300, first * 1.2), 2800) * 0.07
+    elif kind == 'shaku':
+        # shakuhachi: a hollow bamboo tone, a lot of breath, and a breath accent (muraiki) at each note
+        for k, a_ in enumerate([1, 0.42, 0.16, 0.08, 0.035], 1): y += a_ * np.sin(k * ph + k * 0.9)
+        acc = 1 + 1.6 * np.exp(-since / 0.09)
+        y = y * 0.5 + bp(rs.randn(n), 280, 2000) * 0.22 * acc + bp(rs.randn(n), max(200, first * 0.9), first * 2.2) * 0.12
     else:
         amps = [1, 0.18, 0.08, 0.03] if kind == 'xiao' else [1, 0.3, 0.12, 0.05]
         for k, a_ in enumerate(amps, 1): y += a_ * np.sin(k * ph + k)
         y = y * 0.55 + bp(rs.randn(n), 250 if kind == 'xiao' else 500, 1600 if kind == 'xiao' else 2400) * (0.12 if kind == 'xiao' else 0.16)
     return lp(y * env, 3200) * vel
 
+# ------------------------------------------------------ Japanese instruments --
+# Everything stays below about 2.6 kHz: no piercing, chirping or whistling tones.
+def koto(f, dur=2.6, vel=1.0, bend=0.0, vib=0.0):
+    """Koto: thirteen silk strings plucked with picks; the left hand presses behind the bridge to bend a note."""
+    return lp(gz(f, dur, vel, bend, vib), 2600) * 1.15
+
+def shamisen(f, dur=0.9, vel=1.0, skin=1.0):
+    """Shamisen: a skin-faced lute struck with a broad plectrum; the sawari buzz rings on after the note."""
+    n, t = tvec(dur); y = np.zeros(n); ph = TAU * f * t * (1 + 0.012 * np.exp(-t / 0.015))
+    for k in range(1, 16):
+        if f * k > 3000: break
+        a = vel / k ** 0.8 * (1 + 0.7 * np.exp(-((k - 5) / 2.5) ** 2)); d = 0.55 * (300 / f) ** 0.3 / (1 + 0.5 * (k - 1))
+        y += a * np.sin(k * ph + rs.rand() * 6) * np.exp(-t / d)
+    saw = bp(rs.randn(n), f * 3, min(f * 9, 2800)) * np.exp(-t / 0.35) * 0.05 * vel * (0.6 + 0.4 * np.sin(TAU * f * t) ** 2)
+    hit = (lp(rs.randn(n), 700) * np.exp(-t / 0.018) * 0.35 + np.sin(TAU * 140 * t) * np.exp(-t / 0.04) * 0.2) * vel * skin
+    return lp(y + saw + hit, 2700) * env_ar(n, 0.001, 0.05) * 0.24
+
+def sanshin(f, dur=0.9, vel=1.0):
+    """Sanshin: Okinawa's snakeskin lute, softer and rounder than the shamisen."""
+    return lp(shamisen(f, dur, vel, skin=0.4), 2000) * 1.1
+
+def biwa(f, dur=2.4, vel=1.0):
+    """Biwa: the lute of the blind tale-singers; a hard plectrum stroke and a long buzzing ring."""
+    n, t = tvec(dur); y = np.zeros(n); ph = TAU * f * t * (1 + 0.02 * np.exp(-t / 0.02))
+    for k in range(1, 18):
+        if f * k > 2600: break
+        a = vel / k ** 0.7 * (0.4 + abs(np.sin(np.pi * k * 0.21))); d = 1.6 * (150 / f) ** 0.3 / (1 + 0.4 * (k - 1))
+        y += a * np.sin(k * ph + rs.rand() * 6) * np.exp(-t / d)
+    buzz = bp(rs.randn(n), f * 2, min(f * 8, 2400)) * np.exp(-t / 0.9) * 0.06 * vel * (np.sin(TAU * f * t) > 0.6)
+    strike = lp(rs.randn(n), 1200) * np.exp(-t / 0.01) * 0.3 * vel
+    return lp(y + buzz + strike, 2500) * env_ar(n, 0.001, 0.2) * 0.26
+
+def taiko(vel=1.0, f0=52.0):
+    """O-daiko: the great barrel drum; a deep body and a short slap of the skin."""
+    n, t = tvec(2.0); drop = 1 + 0.12 * np.exp(-t / 0.05); y = np.zeros(n)
+    for ratio, amp, dec in [(1, 1, 0.7), (1.52, 0.45, 0.35), (2.1, 0.25, 0.2), (2.6, 0.12, 0.12)]:
+        y += amp * np.sin(TAU * np.cumsum(f0 * ratio * drop) / SR + rs.rand()) * np.exp(-t / dec)
+    return lp(y * 0.8 + lp(rs.randn(n), 900) * np.exp(-t / 0.02) * 0.5 * vel, 1600) * vel * np.minimum(1, t / 0.002)
+
+def shime(vel=1.0, f0=190.0):
+    """Shime-daiko: the small, tightly laced drum that keeps the time."""
+    n, t = tvec(0.4)
+    y = np.sin(TAU * f0 * t * (1 + 0.05 * np.exp(-t / 0.01))) * np.exp(-t / 0.07) + 0.4 * np.sin(TAU * f0 * 1.6 * t) * np.exp(-t / 0.04)
+    return lp(y * 0.7 + lp(rs.randn(n), 1500) * np.exp(-t / 0.008) * 0.4, 2000) * vel * 0.6
+
+def tsuzumi(vel=1.0, f0=250.0):
+    """Ko-tsuzumi: the shoulder drum of Noh, its 'pon' bent by squeezing the cords."""
+    n, t = tvec(0.7); f = f0 * (1 + 0.28 * np.exp(-t / 0.05))
+    y = np.sin(TAU * np.cumsum(f) / SR) * np.exp(-t / 0.2) + 0.3 * np.sin(TAU * np.cumsum(f * 2.3) / SR) * np.exp(-t / 0.05)
+    return lp(y + lp(rs.randn(n), 1200) * np.exp(-t / 0.006) * 0.3, 1800) * vel * 0.5
+
+def sho(f, dur, vel=1.0):
+    """Shō: the court mouth organ of seventeen bamboo pipes; steady, glowing, without vibrato."""
+    n, t = tvec(dur + 1.2); y = np.zeros(n)
+    for k in range(1, 14):
+        fk = f * k
+        if fk > 2600: break
+        y += (1 / k ** 1.1) * (1 if k % 2 else 0.55) * np.sin(TAU * fk * t + rs.rand() * 6)
+    y *= 1 + 0.08 * (slow_noise(n, 0.6, rs.randint(1e6)) - 0.5)
+    return lp(y, 2300) * env_ar(n, 1.1, 1.1) * vel * 0.10
+
+def bonsho(vel=1.0, f=98.0, dur=12.0):
+    """Bonshō: the great temple bell, struck from the side by a swinging beam; it hums for a long time."""
+    n, t = tvec(dur); y = np.zeros(n)
+    for r_, a, d in [(0.5, 0.7, 11), (1, 1, 8), (1.004, 0.6, 8), (2.08, 0.45, 5), (2.71, 0.3, 3.5), (3.55, 0.2, 2.2), (4.9, 0.12, 1.4), (6.2, 0.07, 0.9)]:
+        y += a * np.sin(TAU * f * r_ * t + rs.rand() * 6) * np.exp(-t / d)
+    beam = lp(rs.randn(n), 300) * np.exp(-t / 0.05) * 0.8 + np.sin(TAU * 60 * t) * np.exp(-t / 0.08) * 0.5
+    return lp(y + beam, 1400) * vel * 0.16 * np.minimum(1, t / 0.004)
+
+def hyoshigi(vel=1.0):
+    """Hyōshigi: the kabuki clappers; kept low and wooden, never a crack."""
+    n, t = tvec(0.25)
+    y = np.sin(TAU * 820 * t) * np.exp(-t / 0.03) + 0.5 * np.sin(TAU * 1230 * t) * np.exp(-t / 0.02) + lp(rs.randn(n), 2000) * np.exp(-t / 0.004)
+    return lp(y, 1700) * vel * 0.3
+
+def horagai(f=196.0, dur=3.0, vel=1.0):
+    """Horagai: the conch trumpet blown across a battlefield."""
+    n, t = tvec(dur)
+    fm = f * (1 - 0.06 * np.exp(-t / 0.3)) * (1 + 0.008 * np.sin(TAU * 5 * t) * np.clip(t - 0.5, 0, 1))
+    ph = TAU * np.cumsum(fm) / SR; y = np.zeros(n)
+    for k, a in enumerate([1, 0.6, 0.35, 0.2, 0.12, 0.06], 1): y += a * np.sin(k * ph)
+    return lp(y + bp(rs.randn(n), f, f * 4) * 0.08, 1500) * env_ar(n, 0.25, 0.8) * vel * 0.2
+
+def tonkori(f, dur=1.8, vel=1.0):
+    """Tonkori: the Ainu's long plucked zither, open strings, soft as a harp."""
+    return lp(pluck(f, dur, vel, bright=0.6), 2000) * 0.9
+
+def mukkuri(dur=1.4, f=98.0, vel=1.0):
+    """Mukkuri: the Ainu bamboo jaw harp; one low note whose overtones move like a voice."""
+    n, t = tvec(dur); ph = TAU * f * t; c = 520 + 300 * np.sin(TAU * 1.4 * t + rs.rand() * 6); y = np.zeros(n)
+    for k in range(1, 16): y += np.sin(k * ph) / k ** 0.5 / (1 + ((k * f - c) / 110) ** 2)
+    return lp(y, 1400) * np.exp(-t / 0.7) * np.minimum(1, t / 0.004) * vel * 0.18
+
+def horn(f, dur, vel=1.0):
+    n, t = tvec(dur + 0.4)
+    ph = TAU * np.cumsum(f * vibrato(t, 4.6, 0.003, 0.4, rs.randint(1e6))) / SR; y = np.zeros(n); bright = 700 + 900 * vel
+    for k in range(1, 16):
+        fk = f * k
+        if fk > 3000: break
+        y += np.sin(k * ph) / k ** 0.6 / (1 + (fk / bright) ** 2)
+    return lp(y, 2400) * env_ar(n, 0.12, 0.35) * vel * 0.16
+
+def epiano(f, dur=2.0, vel=1.0):
+    """An electric piano, as on the city-pop records of the 1980s."""
+    n, t = tvec(dur + 0.4); idx = 1.1 * vel * np.exp(-t / 0.25)
+    y = np.sin(TAU * f * t + idx * np.sin(TAU * f * t)) * (0.6 * np.exp(-t / 1.4) + 0.4 * np.exp(-t / 0.4))
+    return lp(y, 2400) * env_ar(n, 0.002, 0.3) * vel * 0.32
+
+def ebass(f, dur=0.5, vel=1.0):
+    n, t = tvec(dur + 0.1); y = np.zeros(n)
+    for k in range(1, 9): y += np.sin(TAU * f * k * t) / k ** 1.6 * np.exp(-t * (1.5 + k * 1.2))
+    return lp(y, 900) * env_ar(n, 0.004, 0.06) * vel * 0.45
+
+def kick(vel=1.0):
+    n, t = tvec(0.4); f = 48 * (1 + 1.5 * np.exp(-t / 0.03))
+    return (np.sin(TAU * np.cumsum(f) / SR) * np.exp(-t / 0.18) + lp(rs.randn(n), 600) * np.exp(-t / 0.005) * 0.2) * vel * 0.7
+
+def softsnare(vel=1.0):
+    n, t = tvec(0.3)
+    return lp(bp(rs.randn(n), 300, 2200) * np.exp(-t / 0.06) * 0.6 + np.sin(TAU * 190 * t) * np.exp(-t / 0.05) * 0.4, 2200) * vel * 0.4
+
+def chip(f, dur=0.25, vel=1.0):
+    """A soft square-wave voice, for the games: rounded off well below the bright edge."""
+    n, t = tvec(dur); y = np.sign(np.sin(TAU * f * t)) * 0.5 + np.sin(TAU * f * t) * 0.5
+    return lp(y, 1600, 4) * env_ar(n, 0.004, 0.05) * vel * 0.12
+
+def glidepad(f0, f1, dur, vel=1.0):
+    """A held chord tone whose pitch sinks, like a tape slowing: the bubble bursting."""
+    n, t = tvec(dur); f = f0 * (f1 / f0) ** smoothstep(t / dur); ph = TAU * np.cumsum(f) / SR; y = np.zeros(n)
+    for k in range(1, 12): y += np.sin(k * ph) / k / (1 + (f * k / 1200) ** 2)
+    return y * env_ar(n, 0.01, 0.4) * vel * 0.12
+
+def render(notes, inst, beat=0.5, oct=0, **kw):
+    """A phrase rendered on its own (to be filtered, e.g. heard through a little radio)."""
+    total = sum(b for _, b in notes) * beat + 3.0; y = np.zeros(int(total * SR)); tt = 0.0
+    for nm_, b in notes:
+        if nm_ != 'r':
+            x = inst(hz(nm_) * 2 ** oct, max(b * beat, RING.get(inst, 0)), **kw); i = int(tt * SR); m = min(len(x), len(y) - i); y[i:i + m] += x[:m]
+        tt += b * beat
+    return y
+
 # -------------------------------------------------------------------- score --
-# One theme for the whole film, in the pentatonic gong mode on D (D E F# A B). It is first
-# heard on the bone flute, nine thousand years ago, and returns with each age's instruments.
-BONE = [('A4', 1.5), ('B4', 0.5), ('D5', 1), ('B4', 1), ('A4', 1), ('F#4', 1), ('E4', 2), ('E4', 0.5), ('F#4', 0.5), ('A4', 1), ('B4', 1), ('A4', 3)]
-THEME_A = [('A4', 1.5), ('B4', 0.5), ('D5', 1), ('E5', 1), ('D5', 1), ('B4', 1), ('A4', 2)]
-THEME_B = [('B4', 1), ('A4', 0.5), ('F#4', 0.5), ('E4', 1), ('F#4', 1), ('A4', 1.5), ('B4', 0.5), ('A4', 2)]
-THEME_C = [('D5', 1), ('E5', 0.5), ('F#5', 0.5), ('E5', 1), ('D5', 1), ('B4', 1.5), ('A4', 0.5), ('D5', 2)]
-SAD = [('B3', 1), ('D4', 0.5), ('E4', 0.5), ('F#4', 1.5), ('E4', 0.5), ('D4', 1), ('B3', 2), ('A3', 1), ('B3', 3)]
-PROG = [['D3', 'A3', 'E4', 'F#4'], ['B2', 'F#3', 'A3', 'D4'], ['G2', 'D3', 'A3', 'B3'], ['A2', 'E3', 'A3', 'D4']]
-PROG_SAD = [['B2', 'F#3', 'B3', 'D4'], ['E2', 'B2', 'D3', 'F#3'], ['G2', 'D3', 'B3', 'D4'], ['F#2', 'C#3', 'F#3', 'A3']]
-PENT = ['D', 'E', 'F#', 'A', 'B']
-def pent(lo, hi):
+# One theme for the whole film, in the yo scale on D (D E G A B). It is first heard on a
+# shakuhachi by the Jōmon fire, before a word is spoken, and comes back alone at the very end.
+OPEN = [('A4', 2.5), ('G4', 0.5), ('A4', 1), ('D5', 2.5), ('B4', 1), ('A4', 1), ('G4', 0.5), ('E4', 0.5), ('D4', 4)]
+THEME_A = [('A4', 1.5), ('G4', 0.5), ('A4', 1), ('B4', 1), ('D5', 2), ('B4', 1), ('A4', 0.5), ('G4', 0.5), ('E4', 1), ('G4', 1), ('A4', 3)]
+THEME_B = [('D5', 1), ('E5', 0.5), ('D5', 0.5), ('B4', 1), ('A4', 1), ('G4', 1.5), ('E4', 0.5), ('D4', 3)]
+# the in scale (D Eb G A Bb): for grief
+SAD = [('A4', 2), ('Bb4', 1), ('A4', 1), ('G4', 2), ('Eb4', 1), ('D4', 3)]
+SAD_B = [('G4', 1.5), ('A4', 0.5), ('Bb4', 2), ('A4', 1), ('G4', 1), ('Eb4', 1), ('D4', 3)]
+PROG = [['D3', 'A3', 'D4', 'E4'], ['G2', 'D3', 'G3', 'A3'], ['E2', 'B2', 'E3', 'G3'], ['A2', 'E3', 'A3', 'B3']]          # open fifths, yo
+WARM = [['D3', 'A3', 'C#4', 'F#4'], ['B2', 'F#3', 'A3', 'D4'], ['G2', 'D3', 'F#3', 'B3'], ['A2', 'E3', 'G3', 'C#4']]       # modern: D major
+POP = [['G2', 'F#3', 'B3', 'D4'], ['F#2', 'E3', 'A3', 'C#4'], ['E2', 'D3', 'G3', 'B3'], ['A2', 'G3', 'B3', 'E4']]          # 1980s: maj7 and m7
+DARK = [['D2', 'A2', 'D3', 'Eb3'], ['Bb1', 'F2', 'Bb2', 'D3'], ['G1', 'D2', 'G2', 'Bb2'], ['A1', 'Eb2', 'A2', 'D3']]
+AITAKE = ['E3', 'A3', 'B3', 'D4', 'E4']                                                                                    # a shō cluster
+YO = ['D', 'E', 'G', 'A', 'B']
+def yo(lo, hi):
     out = []
     for o in range(1, 7):
-        for p in PENT:
-            nm = f'{p}{o}'
-            if hz(lo) <= hz(nm) <= hz(hi): out.append(nm)
+        for p in YO:
+            nm_ = f'{p}{o}'
+            if hz(lo) <= hz(nm_) <= hz(hi): out.append(nm_)
     return out
 
-RING = {gz: 2.4, qin: 4.0, pipa: 0.8, bz: 3.5, piano: 2.6, oud: 1.0}
+RING = {gz: 2.4, qin: 4.0, pipa: 0.8, bz: 3.5, piano: 2.6, oud: 1.0, koto: 2.4, biwa: 2.0, shamisen: 0.7, sanshin: 0.7, tonkori: 1.6, epiano: 1.4}
 
 class Score:
     def __init__(self, dur):
@@ -409,216 +561,305 @@ class Score:
         for i, nm in enumerate(notes): self.add(inst(hz(nm), **kw), t0 + i * step, g, pan + (i / max(1, len(notes) - 1) - 0.5) * 0.6)
 
 def build_score(EV, dur):
-    S = Score(dur); B = 0.75
-    # ---------------------------------------------------------- the bone flute
-    S.add(qin(hz('D2'), 7.0, 0.7), 2.0, 0.5, -0.1)
-    S.line(BONE, EV['flute'] + 0.25, 'bone', beat=0.6, g=0.55, pan=0.15)        # nine thousand years old, and it still plays
-    S.add(qin(hz('A2'), 6.0, 0.6, slide=-2), EV['fluteStop'] + 0.6, 0.4, -0.2)
-    S.arp(25.0, 6, gz, sub=2, pattern=(0, 2, 1, 3, 2, 3, 1, 2), g=0.20, oct=1, vel=0.55)  # the first fields
-    S.line(THEME_A, 42.9, 'xiao', beat=0.6, g=0.42, pan=-0.1)
-    # --------------------------------------------------------- bronze and bone
-    for i in range(3): S.add(tanggu(0.9 - i * 0.15), EV['king'] + i * 0.75, 0.55, 0)
-    S.add(gong(70, 7, 0.9), EV['king'], 0.6, 0.1)
-    for i, nm in enumerate(['D3', 'A3', 'E4']): S.add(bz(hz(nm), 5, 0.9), EV['vessels'] + i * 0.35, 0.5, -0.3 + i * 0.3)
-    S.phrase([('A3', 1), ('B3', 1), ('D4', 1), ('B3', 1), ('A3', 2)], 56.0, bz, beat=0.6, g=0.42)
-    S.add(drone(int(9 * SR), [(hz('D2'), 0.5), (hz('A2'), 0.25)], 5)[:, 0] * env_ar(int(9 * SR), 2, 3), EV['oracle'], 0.5)
-    for i, ts in enumerate(EV['signs']): S.add(bz(hz(['D4', 'E4', 'F#4', 'A4', 'B4'][i]), 3.5, 0.6), ts + 0.1, 0.36, -0.4 + i * 0.2)
-    S.phrase(THEME_A, 82.3, gz, beat=0.7, g=0.36, pan=0.1, vel=0.75)
-    for nm in ['D3', 'G#3', 'A3']: S.add(choir(hz(nm), 7.0, 0.8, 'o'), EV['eyes'] - 1.0, 0.11, 0)  # the bronze faces of Sanxingdui
-    S.add(gong(55, 8, 0.7, bloom=1.4), EV['eyes'] - 0.6, 0.5)
-    # ------------------------------------------------------ a hundred schools
-    S.chords(EV['mandate'] - 0.4, 2, choir, g=0.10, vowel='a')
-    S.add(bz(hz('D3'), 6, 1.0), EV['mandate'], 0.5)
-    S.beats(EV['war'], EV['war'] + 7.2, B / 2, tanggu, g=0.42, accent=4, f0=60)                   # five hundred years of war: no melody
-    for nm in ['D2', 'A2']: S.add(bowed(hz(nm), 8.0, 1.0, bright=900, attack=1.5), EV['war'], 0.24)
-    S.phrase([('D3', 2), ('A3', 1), ('B3', 1), ('A3', 2), ('F#3', 1), ('E3', 1), ('D3', 4)], EV['kongzi'] + 0.2, qin, beat=0.62, g=0.5, pan=-0.1)
-    S.gliss(EV['dao'] - 0.1, pent('D4', 'D6'), 0.06, gz, g=0.22, dur=2.0, vel=0.6)                # be like water
-    S.line(THEME_B, EV['dao'] + 1.8, 'xiao', beat=0.65, g=0.32, pan=0.15)
-    S.add(tanggu(1.0, 58), EV['sunzi'], 0.5); S.add(qin(hz('D2'), 6.0, 0.9, slide=0), EV['sunzi'] + 0.05, 0.45)
-    S.line(THEME_C, 136.9, 'xiao', beat=0.55, oct=-1, g=0.34)
-    # ------------------------------------------------------ the First Emperor
-    for i, tc in enumerate(EV['conquer']): S.add(tanggu(0.75 + i * 0.05, 62), tc, 0.5, -0.4 + i * 0.16)
-    S.add(gong(60, 8, 1.0), EV['qin'], 0.7); S.add(timpani(55.0, 1.0), EV['qin'], 0.45)
-    for nm in ['D3', 'A3', 'D4']: S.add(sheng(hz(nm), 5.5, 0.9), EV['emperor'] - 0.2, 0.13); S.add(choir(hz(nm), 5.5, 0.9, 'o'), EV['emperor'], 0.09)
-    for i, ts in enumerate(EV['std']): S.add(muyu(1.0, 420), ts, 0.5, 0.2); S.add(bz(hz(['D4', 'E4', 'F#4', 'A4'][i]), 3.0, 0.7), ts + 0.02, 0.33)
-    S.beats(EV['wall'], EV['wall'] + 6, B, lambda vel: bowed(hz('D2'), 0.55, vel, bright=800, attack=0.05), g=0.30, accent=2)
-    S.beats(EV['army'], EV['army'] + 9.0, B * 2, tanggu, g=0.34, accent=2, f0=66)
-    S.add(pipa_trem(hz('A3'), 4.0, 0.8), EV['army'] + 0.5, 0.25, 0.3); S.add(pipa_trem(hz('D4'), 4.0, 0.8), EV['army'] + 4.5, 0.25, 0.3)
-    S.add(choir(hz('A3'), 5.0, 0.8, 'o'), EV['faces'], 0.08); S.add(choir(hz('D3'), 5.0, 0.8, 'o'), EV['faces'], 0.08)
-    S.add(gz(hz('A4'), 3, 0.8, bend=2), EV['found'] + 0.3, 0.3)
-    S.add(gong(48, 6, 0.8), EV['qinEnd'] + 0.1, 0.5)
-    S.gliss(EV['qinEnd'] + 0.4, ['D5', 'B4', 'A4', 'F#4', 'E4', 'D4', 'B3'], 0.14, pipa, g=0.3, vel=0.7)
-    # ---------------------------------------------------------- the Silk Road (the whole ensemble, for the first time)
-    S.chords(EV['han'] - 0.2, 4, bowed, g=0.17, bright=2200, attack=0.9)
-    S.chords(EV['han'] - 0.2, 4, sheng, g=0.07)
-    S.arp(EV['han'], 4, gz, g=0.15, oct=1, vel=0.6)
-    S.line(THEME_A + THEME_C, EV['han'] + 0.6, 'dizi', beat=B, g=0.30, pan=-0.1)
-    S.beats(EV['road'] - 0.5, EV['road'] + 12, B / 2, paigu, g=0.25, accent=4, pan=0.2)
-    S.beats(EV['road'] - 0.5 + B / 4, EV['road'] + 12, B, muyu, g=0.16, accent=2, pan=-0.3)
-    S.arp(EV['road'] - 0.5, 4, pipa, g=0.17, sub=2, pattern=(0, 2, 1, 2, 3, 2, 1, 2), oct=0, vel=0.7, pan=0.25)
-    S.line(THEME_B, EV['road'] + 0.2, 'erhu', beat=B, g=0.30, pan=-0.2)
-    S.phrase([('D4', 0.5), ('E4', 0.5), ('F#4', 0.5), ('A4', 1), ('F#4', 0.5), ('E4', 1)], EV['east'], oud, beat=0.4, g=0.26, pan=0.4)  # a lute from the west
-    S.add(bz(hz('D3'), 6, 0.9), EV['dharma'], 0.4); S.add(hum(hz('A2'), 5, 0.8, 'm'), EV['dharma'] + 0.2, 0.25)
-    S.line(THEME_C, 213.6, 'erhu', beat=0.65, g=0.32, pan=-0.2)
-    S.arp(EV['paper'], 3, gz, g=0.12, oct=1, vel=0.5, sub=1)
-    for nm in ['D2', 'A2']: S.add(bowed(hz(nm), 9.0, 0.9, bright=900, attack=2.0), EV['seismo'], 0.18)
-    S.add(bz(hz('A3'), 4, 1.0), EV['quake'] + 0.5, 0.45, 0.2)                                     # the ball, into the toad
-    S.phrase(THEME_B, 235.6, gz, beat=0.6, g=0.32, vel=0.7)
-    # ---------------------------------------------------------- long divided
-    S.line(SAD, EV['novel'] + 0.1, 'erhu', beat=0.8, g=0.36, pan=-0.1)
-    S.add(bz(hz('D3'), 7, 1.0), EV['buddha'], 0.45); S.add(gong(80, 7, 0.5, bloom=1.2), EV['buddha'] + 0.1, 0.25)
-    for nm in ['D3', 'A3']: S.add(hum(hz(nm), 8.5, 0.8, 'm'), EV['buddha'] + 0.4, 0.22, 0)
-    S.beats(EV['buddha'] + 1.0, EV['buddha'] + 8.5, 1.0, muyu, g=0.18, accent=4, f=480)
-    # ------------------------------------------------------------------ the Tang
-    S.arp(EV['canal'] - 0.4, 3, gz, sub=4, pattern=(0, 1, 2, 3, 4, 3, 2, 1), g=0.12, oct=1, vel=0.55)
-    S.phrase([('D3', 2), ('E3', 1), ('A3', 3), ('B3', 2)], EV['exam'] + 0.4, qin, beat=0.7, g=0.4)
-    S.beats(EV['changan'] - 0.4, EV['changan'] + 9.4, B / 2, paigu, g=0.24, accent=4)
-    S.beats(EV['changan'] - 0.4, EV['changan'] + 9.4, B * 2, tanggu, g=0.30, accent=2)
-    S.arp(EV['changan'] - 0.4, 3, pipa, g=0.16, sub=4, pattern=(0, 2, 1, 2, 3, 2, 1, 2), oct=0, vel=0.65)
-    S.chords(EV['changan'] - 0.4, 3, sheng, g=0.07)
-    S.line(THEME_A + THEME_C, EV['changan'], 'dizi', beat=B * 0.9, g=0.28)
-    S.phrase([('A3', 0.5), ('B3', 0.5), ('D4', 1), ('E4', 0.5), ('D4', 0.5), ('A3', 1)], EV['persia'], oud, beat=0.4, g=0.24, pan=0.4)
-    S.add(gong(65, 7, 0.8), EV['wu'], 0.5)
-    for i, nm in enumerate(['D3', 'A3', 'D4', 'F#4']): S.add(bz(hz(nm), 5, 0.8), EV['wu'] + 0.1 + i * 0.12, 0.33, -0.3 + i * 0.2)
-    S.chords(EV['wu'], 2, bowed, g=0.15, bright=2000, attack=1.0)
-    # Li Bai's moon: the xiao and the qin, very sparse under the poem
-    S.line(THEME_A, 300.9, 'xiao', beat=0.55, g=0.30)
-    for i, nm in enumerate(['D3', 'A3', 'B3', 'A3', 'D3']): S.add(qin(hz(nm), 5.0, 0.6), 303.0 + i * 2.4, 0.3, -0.2 + i * 0.1)
-    S.add(qin(hz('A2'), 6.0, 0.8, slide=-2), EV['home'] + 0.3, 0.42)
-    S.line(THEME_B, 312.9, 'xiao', beat=0.6, g=0.32)
-    # ------------------------------------------------------------------ the Song
-    S.beats(EV['song'], EV['song'] + 5.5, B / 2, muyu, g=0.16, accent=2, pan=0.3)
-    S.arp(EV['song'], 2, pipa, g=0.15, sub=4, oct=0, vel=0.6)
-    S.line(THEME_C, EV['song'] + 0.5, 'dizi', beat=0.5, g=0.26)
-    for nm in ['D2', 'G#2']: S.add(bowed(hz(nm), 5.0, 0.8, bright=1000, attack=1.2), 323.7, 0.16)
-    S.add(gong(50, 7, 1.0), EV['bang'] + 0.02, 0.6); S.add(timpani(49.0, 1.0), EV['bang'], 0.5)
-    for i, tf in enumerate(EV.get('fw', [332.4, 333.3, 334.1, 334.9, 335.9, 336.8, 337.6])):
-        S.add(gz(hz(['D5', 'E5', 'F#5', 'A5', 'B5', 'A5', 'D5'][i]), 2.0, 0.6), tf + 0.02, 0.2, -0.5 + i * 0.16)
-    S.beats(EV['fireworks'] - 0.4, EV['fireworks'] + 5.5, B / 2, paigu, g=0.22, accent=4)
-    S.add(bz(hz('A4'), 3.5, 0.6), EV['compass'] + 0.2, 0.3)
-    S.gliss(EV['pages'], pent('A4', 'A5'), 0.08, gz, g=0.18, dur=1.6, vel=0.5)
-    S.line(THEME_A, 352.5, 'dizi', beat=0.5, g=0.26)
-    # --------------------------------------------------------- Mongols and Ming
-    for nm, a_ in [('A1', 0.9), ('A2', 0.5)]: S.add(hum(hz(nm), 9.5, a_, 'o'), EV['mongols'] - 0.2, 0.30)   # a drone, sung from the throat
-    S.beats(EV['mongols'], EV['mongols'] + 8.0, B / 3, tanggu, g=0.28, accent=3, f0=70)
-    S.line(THEME_B, EV['mongols'] + 0.4, 'erhu', beat=0.75, oct=-1, g=0.30)
-    S.add(gong(60, 8, 1.0), EV['ming'], 0.6); S.add(timpani(73.4, 0.9), EV['ming'], 0.4)
-    S.chords(EV['ming'], 3, bowed, g=0.18, bright=2400, attack=0.7); S.chords(EV['ming'], 3, sheng, g=0.07); S.chords(EV['ming'], 3, choir, g=0.07, vowel='a')
-    S.line(THEME_A, EV['ming'] + 0.3, 'dizi', beat=B, g=0.28)
-    for i, nm in enumerate(['D3', 'A3', 'D4', 'E4', 'F#4']): S.add(bz(hz(nm), 5, 0.8), EV['forbidden'] + i * 0.15, 0.30)
-    S.chords(EV['zhenghe'], 3, bowed, g=0.16, bright=2000, attack=1.4)
-    S.line(THEME_C, EV['zhenghe'] + 0.8, 'erhu', beat=B, g=0.28, pan=-0.2)
-    S.beats(EV['africa'], EV['africa'] + 4.5, B / 2, lambda vel: logdrum(220, vel), g=0.22, accent=3, pan=0.3)
-    for i, nm in enumerate(['A4', 'B4', 'D5', 'E5', 'D5', 'B4', 'D5']): S.add(gz(hz(nm), 1.8, 0.6, vib=0.006 if i == 6 else 0), EV['qilin'] + i * 0.28, 0.24, 0.3)
-    S.line(THEME_B, 401.4, 'dizi', beat=0.5, g=0.26)
-    # ------------------------------------------------------------ the last dynasty
-    S.add(tanggu(1.0), EV['manchu'], 0.45); S.add(gong(70, 6, 0.7), EV['qing'], 0.4)
-    S.chords(EV['qing'], 2, sheng, g=0.08); S.arp(EV['qing'], 2, gz, g=0.13, vel=0.5)
-    for i in range(16): S.add(gz(hz(pent('D4', 'D6')[i % 11]), 1.6, 0.4 + i * 0.02), EV['popgrow'] + i * 0.36 * (1 - i * 0.02), 0.18, -0.4 + (i % 5) * 0.2)   # more and more people
-    S.arp(EV['trade'], 2, pipa, sub=2, g=0.12, oct=0, vel=0.5)
-    for nm in ['B1', 'F#2']: S.add(bowed(hz(nm), 20.0, 0.9, bright=800, attack=2.5), EV['opium'], 0.20)     # opium, war, rebellion: no melody
-    S.line([('B3', 3), ('A3', 1), ('F#3', 4)], EV['opium'] + 0.4, 'erhu', beat=0.8, g=0.22)
-    S.add(timpani(49.0, 0.8), EV['opiumWar'], 0.4)
-    for k in range(4): S.add(tanggu(0.55, 52), EV['taiping'] + k * 1.6, 0.30)
-    S.phrase([('D5', 1), ('E5', 1), ('D5', 1), ('B4', 1), ('A4', 3)], EV['abdicate'] + 0.6, gz, beat=0.45, g=0.22, vel=0.5)   # a six-year-old's tune
-    S.line([('F#4', 2), ('E4', 1), ('D4', 4)], 454.8, 'erhu', beat=0.6, g=0.24)
-    # ------------------------------------------------------ war and revolution
-    for nm in ['B1', 'F#2', 'B2']: S.add(bowed(hz(nm), 16.0, 0.9, bright=700, attack=3.0), EV['republic'], 0.18)
-    for k in range(6): S.add(timpani(49.0, 0.5), EV['japan'] + k * 1.4, 0.28)
-    S.add(bz(hz('D3'), 7, 0.8), 471.5, 0.38)                                                      # mourning: one bell
-    S.add(gong(55, 8, 0.9, bloom=1.0), EV['prc'], 0.5)
-    S.chords(EV['prc'], 1, bowed, g=0.16, bright=2000, attack=1.2); S.chords(EV['prc'], 1, choir, g=0.08, vowel='a')
-    # -------------------------------------------------------------- Mao's China
-    S.phrase([('D4', 1), ('E4', 1), ('F#4', 1), ('A4', 2), ('F#4', 1), ('A4', 1), ('B4', 2)], EV['schools'] + 0.2, gz, beat=0.5, g=0.22, vel=0.6)
-    S.beats(EV['leap'], EV['leap'] + 3.8, B / 2, lambda vel: bowed(hz('D2'), 0.3, vel, bright=900, attack=0.03), g=0.25)
-    for nm in ['B1', 'F#2']: S.add(bowed(hz(nm), 15.0, 0.8, bright=700, attack=2.0), EV['famine'] - 0.2, 0.16)    # famine, Cultural Revolution: no melody
-    S.beats(EV['cultural'], EV['cultural'] + 6.5, 0.78, lambda vel: drum(vel * 0.6, 58, 1.0), g=0.25, accent=2)
-    S.phrase([('A2', 2), ('D3', 2), ('E3', 1), ('A3', 3)], EV['tu'] + 0.4, qin, beat=0.7, g=0.4)              # Tu Youyou, and the old book
-    S.add(gz(hz('A4'), 2.5, 0.6, vib=0.006), EV['herb'], 0.2)
-    S.add(gz(hz('D5'), 3.0, 0.7, bend=0), EV['cure'], 0.22)
-    S.chords(EV['saved'] - 0.3, 2, bowed, g=0.14, bright=2000, attack=1.4); S.chords(EV['saved'] - 0.3, 2, choir, g=0.06, vowel='a')
-    S.line(THEME_A, 521.9, 'dizi', beat=0.55, g=0.28)
-    # -------------------------------------------------------------- opening up: the theme turns modern
-    S.chords(EV['open'] - 0.4, 6, bowed, g=0.13, bright=2200, attack=1.2)
-    S.arp(EV['open'] - 0.4, 6, pulse, sub=4, pattern=(0, 2, 1, 3, 2, 3, 1, 2), g=0.20, oct=1, vel=0.7)
-    S.phrase(THEME_A + THEME_B, EV['open'] + 0.2, piano, beat=B, g=0.30, pan=0.1, vel=0.65)
-    S.beats(EV['shenzhen'], 551.0, B, lambda vel: drum(vel, 56, 0.8), g=0.30, accent=2)
-    S.beats(EV['shenzhen'] + B / 2, 551.0, B, muyu, g=0.12, accent=2, pan=0.3)
-    S.chords(EV['poverty'] - 0.2, 3, choir, g=0.07, vowel='a'); S.chords(EV['poverty'] - 0.2, 3, pad, g=0.5)
-    S.line(THEME_C, EV['poverty'] + 0.2, 'dizi', beat=B, g=0.26)
-    S.add(bowed(hz('B1'), 9.0, 0.7, bright=600, attack=2.0), 552.4, 0.18)                          # Tiananmen: silence, a low string
-    for i, nm in enumerate(['D4', 'F#4', 'A4', 'B4', 'D5', 'E5', 'F#5', 'A5']): S.add(piano(hz(nm), 3.0, 0.5), EV['spark'] + i * (EV['allLit'] - EV['spark']) / 8, 0.22, -0.6 + i * 0.17)
-    S.chords(EV['allLit'], 2, bowed, g=0.16, bright=2400, attack=0.8); S.chords(EV['allLit'], 2, choir, g=0.07, vowel='a')
-    S.gliss(EV['allLit'], pent('D4', 'D6'), 0.05, gz, g=0.18, dur=2.0, vel=0.6)
-    S.phrase(THEME_C, 569.6, piano, beat=0.6, g=0.30, vel=0.6)
-    # ------------------------------------------------------------------- today
-    S.chords(EV['today'], 2, pad, g=0.6)
-    S.arp(EV['hsr'] - 0.3, 4, pulse, sub=4, g=0.22, oct=1, vel=0.75)
-    S.chords(EV['hsr'] - 0.3, 4, bowed, g=0.13, bright=2400, attack=0.6)
-    S.beats(EV['hsr'] - 0.3, 591.5, B, lambda vel: drum(vel, 52, 0.7), g=0.32, accent=2)
-    S.add(timpani(55.0, 0.4), 591.8, 0.3)
-    for k in range(16): S.add(timpani(55.0, 0.3 + k * 0.04), 591.9 + k * 0.155, 0.22)                 # a roll, into the launch
-    S.add(gong(55, 8, 1.0), EV['launch'], 0.55); S.add(timpani(55.0, 1.0), EV['launch'], 0.5)
-    for nm in ['D3', 'A3', 'D4', 'F#4', 'A4']: S.add(choir(hz(nm), 6, 1.0, 'a'), EV['launch'] + 0.1, 0.07); S.add(bowed(hz(nm), 6, 1.0, bright=2400, attack=0.8), EV['launch'], 0.13)
-    S.chords(EV['farside'], 2, pad, g=0.45, bright=900)
-    for i, nm in enumerate(['A4', 'D5', 'E5', 'A4', 'B4']): S.add(bz(hz(nm), 4, 0.5), EV['farside'] + 0.6 + i * 1.3, 0.22, -0.4 + i * 0.2)
-    S.line(THEME_A, 605.5, 'dizi', beat=0.5, g=0.26)
-    # ------------------------------------------------------------ breakthroughs
-    S.arp(609.2, 2, pulse, sub=2, g=0.18, oct=1, vel=0.6)
-    S.add(timpani(55.0, 1.0), EV['gorges'], 0.5); S.add(gong(55, 7, 0.8), EV['gorges'], 0.45)
-    for nm in ['D2', 'A2', 'D3', 'A3', 'D4', 'F#4']: S.add(bowed(hz(nm), 7.0, 1.0, bright=1800, attack=0.6), EV['gorges'], 0.13); S.add(choir(hz(nm), 7.0, 0.9, 'o'), EV['gorges'] + 0.2, 0.05)
-    S.arp(EV['hzmb'], 3, gz, sub=4, pattern=(0, 1, 2, 3, 4, 3, 2, 1), g=0.12, oct=1, vel=0.5)
-    S.chords(EV['hzmb'], 3, pad, g=0.45)
-    S.line(THEME_C, 625.6, 'erhu', beat=B, g=0.24)
-    for nm in ['B1', 'F#2', 'B2', 'D3']: S.add(bowed(hz(nm), 9.0, 0.9, bright=1200, attack=1.5), EV['huajiang'], 0.13)
-    # the artificial sun: a cold pulse, a swell as the plasma lights, a clock that keeps going
-    S.chords(EV['tokamak'], 4, pad, prog=[['D2', 'A2', 'D3', 'E3']], g=0.55, bright=800)
-    S.arp(EV['tokamak'] + 0.4, 6, pulse, prog=[['D3', 'A3', 'D4', 'E4']], sub=4, pattern=(0, 2, 1, 3), g=0.18, oct=1, vel=0.6)
-    for nm in ['D3', 'A3', 'D4', 'E4', 'A4']: S.add(choir(hz(nm), 6, 1.0, 'a'), EV['plasma'], 0.07); S.add(pad(hz(nm), 6, 1.0, bright=1600, attack=1.5), EV['plasma'] - 0.4, 0.5)
-    S.beats(EV['seventeen'], EV['seventeen'] + 6, B, muyu, g=0.14, accent=2, f=600)
-    S.add(bz(hz('D4'), 5, 0.7), 658.2, 0.3)
-    # quantum: notes that seem to be in two places at once
-    S.chords(EV['quantum'], 3, pad, prog=[['B2', 'F#3', 'A3', 'D4']], g=0.45, bright=1000)
-    r2 = np.random.RandomState(5)
-    for i in range(14): S.add(bz(hz(pent('A3', 'A5')[r2.randint(10)]), 3, 0.4), EV['quantum'] + 0.3 + i * 0.68, 0.17, r2.rand() * 1.6 - 0.8)
-    S.add(gong(70, 6, 0.8), EV['beat'], 0.4); S.chords(EV['beat'], 1, bowed, g=0.15, bright=2200, attack=0.3)
-    # the New Year gala: drums, gong, pipa, and the theme, fast
-    S.add(gong(80, 4, 0.8), 671.8, 0.4)
-    S.beats(671.8, 683.0, B / 2, paigu, g=0.26, accent=4)
-    S.beats(671.8, 683.0, B, tanggu, g=0.32, accent=2)
-    S.arp(671.8, 4, pipa, g=0.15, sub=4, pattern=(0, 2, 1, 2, 3, 2, 1, 2), oct=0, vel=0.65)
-    S.chords(671.8, 4, sheng, g=0.06)
-    S.line(THEME_A + THEME_C, 672.0, 'dizi', beat=0.5, g=0.30)
-    # the dark factory: only the machines' pulse
-    S.arp(EV['factory'] + 0.5, 6, pulse, prog=[['D3', 'A3', 'D4', 'A3'], ['D3', 'A3', 'E4', 'A3']], sub=4, pattern=(0, 1, 2, 3), g=0.17, oct=0, vel=0.6)
-    S.chords(EV['factory'] + 0.5, 4, pad, prog=[['D2', 'A2', 'D3', 'A3']], g=0.45, bright=700)
-    for nm in ['B1', 'F#2']: S.add(bowed(hz(nm), 4.0, 0.7, bright=600, attack=1.2), EV['coal'], 0.15)
-    S.chords(EV['solar'], 2, pad, g=0.5, bright=1600); S.arp(EV['solar'], 2, gz, g=0.12, vel=0.5)
-    for i, nm in enumerate(['D5', 'B4', 'D5', 'E5']): S.add(bz(hz(nm), 2.4, 0.4), EV['pandafarm'] + 0.4 + i * 0.3, 0.16, 0.3)
-    S.arp(EV['trees'] - 0.2, 3, gz, g=0.13, vel=0.55, sub=2)
-    S.line(THEME_B, EV['trees'], 'dizi', beat=B, g=0.24, pan=-0.1)
-    # ------------------------------------------------------------ the long thread
-    S.line(BONE, 713.3, 'bone', beat=0.62, g=0.50, pan=0.15)                                       # the bone flute, once more
-    S.chords(EV['pull'] + 0.2, 4, bowed, g=0.18, bright=2400, attack=1.4)
-    S.chords(EV['pull'] + 0.2, 4, sheng, g=0.06); S.chords(EV['pull'] + 0.2, 4, choir, g=0.07, vowel='a')
-    S.arp(EV['pull'] + 0.2, 4, gz, g=0.14, sub=2, vel=0.55)
-    S.beats(EV['pull'] + 0.2, EV['pull'] + 12.0, B * 2, tanggu, g=0.22, accent=2)
-    S.line(THEME_A + THEME_C, 722.2, 'dizi', beat=B * 0.8, g=0.28)
-    S.line(THEME_B, 732.4, 'erhu', beat=0.7, g=0.30, pan=-0.15)
-    S.add(gong(60, 9, 0.9), EV['title'], 0.5); S.add(timpani(73.4, 0.8), EV['title'], 0.4)
-    for i, nm in enumerate(['D2', 'A2', 'D3', 'A3', 'E4', 'F#4', 'A4']):
-        S.add(bowed(hz(nm), 10.0, 1.0, bright=2200, attack=2.0), EV['title'] + 0.2, 0.15, -0.4 + i * 0.13)
-        S.add(choir(hz(nm), 9.0, 1.0, 'a'), EV['title'] + 0.5, 0.06, 0.4 - i * 0.13)
-        S.add(bz(hz(nm) * 2, 6, 0.5), EV['title'] + 0.3 + i * 0.12, 0.18)
-    S.gliss(EV['title'] + 4.0, pent('D4', 'D6'), 0.07, gz, g=0.16, dur=3.0, vel=0.5)
-    S.line([('E4', 0.5), ('F#4', 0.5), ('A4', 4)], 742.6, 'bone', beat=0.62, g=0.4, pan=0.15)        # the last two notes of the first tune
-    # a drone under everything: the earth note, D, quieter where the history is hard
+    S = Score(dur); B = 0.75; E = EV
+    def sho_chord(t0, d, g=0.12, names=AITAKE, oct=0):
+        for i, nm_ in enumerate(names): S.add(sho(hz(nm_) * 2 ** oct, d, 0.9), t0 + i * 0.05, g, -0.4 + i * 0.2)
+    def strum(t0, names, inst=koto, step=0.05, g=0.3, pan=0.0, **kw): S.gliss(t0, names, step, inst, g, pan, **kw)
+    def low(t0, d, names=('D2', 'A2'), g=0.2, bright=900, attack=1.5):
+        for nm_ in names: S.add(bowed(hz(nm_), d, 0.9, bright=bright, attack=attack), t0, g)
+    # ------------------------------------------------------------- 1. clay and fire
+    S.line(OPEN, 0.3, 'shaku', beat=0.8, g=0.55, pan=0.1)                        # the first sound: a bamboo flute by the fire
+    for nm_, a_ in [('D2', 0.8), ('A2', 0.5)]: S.add(hum(hz(nm_), 12.0, a_, 'm'), 0.6, 0.16)
+    S.add(koto(hz('D3'), 4.0, 0.8, bend=0), E['fired'] + 0.1, 0.32, -0.1)
+    S.add(taiko(0.5, 46), E['fired'], 0.35)
+    for nm_ in ['D3', 'A3']: S.add(choir(hz(nm_), 5.0, 0.7, 'o'), E['pot1'] - 0.4, 0.06)
+    S.beats(E['cordmark'], E['cordOut'] - 0.5, B, lambda vel: tsuzumi(vel * 0.7, 170), g=0.30, accent=4, pan=-0.2)   # a drum of clay and hide
+    S.arp(E['cordmark'] + 1.5, 2, koto, sub=1, pattern=(0, 2, 1, 3), g=0.14, oct=1, vel=0.5)
+    S.line(THEME_B, E['fish'] + 0.4, 'shaku', beat=0.6, oct=-1, g=0.36, pan=-0.1)
+    S.beats(E['deerRun'], E['deerRun'] + 3.0, B / 2, lambda vel: tsuzumi(vel * 0.6, 200), g=0.24, accent=2, pan=0.2)
+    for nm_ in ['D3', 'A3', 'E4']: S.add(hum(hz(nm_), 5.0, 0.6, 'o'), E['thousand'], 0.10)
+    strum(E['flamepot'], yo('D4', 'D5'), step=0.07, g=0.22, vel=0.6)              # rims like flames
+    for nm_ in ['D2', 'A2']: S.add(choir(hz(nm_), 4.5, 0.6, 'o'), E['dogu'] - 0.2, 0.07)
+    S.add(koto(hz('A4'), 3.0, 0.6, vib=0.006), E['goggle'] + 0.2, 0.25)
+    # ------------------------------------------------------------- 2. rice and mirrors
+    S.beats(E['bronze'] - 5.0, E['chronicle'] - 1.0, B, shime, g=0.16, accent=4, pan=0.2)   # the rhythm of the planting
+    S.line(THEME_A, 47.6, 'shaku', beat=0.62, g=0.30, pan=-0.15)
+    S.arp(49.0, 4, koto, sub=2, pattern=(0, 2, 1, 3, 2, 3, 1, 2), g=0.13, oct=1, vel=0.5)
+    for i, nm_ in enumerate(['D4', 'A4']): S.add(bz(hz(nm_), 4.5, 0.8), E['bronze'] + i * 0.3, 0.36, -0.2 + i * 0.4)   # a dōtaku, the bronze bell
+    S.add(taiko(0.7, 50), E['towers'], 0.32); S.add(taiko(0.5, 50), E['towers'] + B, 0.26)
+    sho_chord(E['chronicle'] - 1.2, 9.0, g=0.11)                                   # Himiko: a violet dusk
+    for k, tt in enumerate([E['himiko'], E['himiko'] + 1.2, E['sorcery'], E['sorcery'] + 0.9, E['sorcery'] + 2.1]): S.add(tsuzumi(0.8, 240 - k * 8), tt, 0.32, -0.3 + k * 0.15)
+    for nm_ in ['D2', 'A2']: S.add(choir(hz(nm_), 7.0, 0.7, 'o'), E['sorcery'] - 0.5, 0.07)
+    S.line(SAD_B, E['sorcery'] + 0.3, 'shaku', beat=0.6, oct=-1, g=0.28)
+    strum(E['seal'], ['D4', 'A4', 'D5'], step=0.06, g=0.3, vel=0.8); S.add(bz(hz('A3'), 4, 0.8), E['seal'] + 0.05, 0.3)
+    for i, nm_ in enumerate(['D5', 'B4', 'A4', 'G4', 'E4', 'D4', 'B3', 'A3']): S.add(koto(hz(nm_), 2.4, 0.5), E['mirrors'] + i * 0.2, 0.2, 0.4 - i * 0.1)   # a hundred mirrors catching light
+    S.chords(E['mirrors'] - 0.4, 1, bowed, prog=WARM[:1], g=0.13, bright=2000, attack=1.0)
+    # ------------------------------------------------------------- 3. keyholes
+    low(77.6, 11.0, g=0.18)
+    S.add(taiko(0.8, 46), E['kofun'], 0.36)
+    S.line(THEME_A, E['keyhole'] + 0.2, 'shaku', beat=0.68, oct=-1, g=0.34)
+    for i, k in enumerate(['hClay', 'hHouse', 'hHorse', 'hWarrior', 'hDancers']): S.add(koto(hz(['D4', 'E4', 'G4', 'A4', 'B4'][i]), 2.2, 0.6), E[k] + 0.05, 0.26, -0.4 + i * 0.2)
+    S.beats(E['hDancers'], E['hDancers'] + 2.4, B / 2, shime, g=0.16, accent=2)
+    sho_chord(E['imperial'] - 0.6, 9.0, g=0.13)
+    S.add(taiko(0.9, 48), E['imperial'], 0.38)
+    S.line(THEME_B, E['imperial'] + 0.6, 'shaku', beat=0.75, oct=-1, g=0.30)
+    S.add(taiko(1.0, 44), E['monarchy'], 0.42)
+    for nm_ in ['D3', 'A3', 'E4']: S.add(choir(hz(nm_), 5.0, 0.8, 'a'), E['monarchy'], 0.07)
+    # ------------------------------------------------------------- 4. the rising sun
+    S.add(bonsho(1.0, 98), E['buddhism'], 0.55)                                    # the first temple bell
+    S.beats(E['buddhism'] + 0.8, E['buddhism'] + 6.6, B, muyu, g=0.16, accent=4, f=470)
+    for nm_ in ['D3', 'A2']: S.add(hum(hz(nm_), 6.5, 0.7, 'o'), E['buddhism'] + 0.6, 0.15)
+    sho_chord(E['wa'] - 0.4, 6.5, g=0.12)
+    S.phrase(THEME_B, E['wa'] + 0.4, koto, beat=0.6, g=0.30, vel=0.7)
+    S.beats(E['sunrise'] - 1.6, E['sunrise'], 0.1, lambda vel: shime(vel * 0.5), g=0.18, accent=99)    # a roll, swelling
+    S.add(taiko(1.0, 46), E['sunrise'], 0.5); S.add(timpani(55.0, 0.8), E['sunrise'], 0.3)
+    sho_chord(E['sunrise'] - 0.2, 7.0, g=0.12)
+    S.chords(E['sunrise'], 2, bowed, prog=PROG, g=0.16, bright=2200, attack=0.8)
+    S.chords(E['sunrise'], 2, choir, prog=PROG, g=0.06, vowel='a')
+    strum(E['sunrise'] + 0.05, yo('D4', 'D6'), step=0.05, g=0.2, vel=0.55)
+    S.line(THEME_A, E['sunrise'] + 0.8, 'shaku', beat=0.72, g=0.36)
+    S.phrase(THEME_B, E['nihon'] + 0.2, koto, beat=0.6, g=0.28, vel=0.65)
+    S.arp(E['horyuji'] - 1.5, 4, koto, sub=2, g=0.12, oct=1, vel=0.5)
+    S.line(THEME_A, E['horyuji'] + 0.3, 'shaku', beat=0.7, oct=-1, g=0.30)
+    relay = ['D4', 'A4', 'G4', 'A4']                                               # carpenters, hand to hand for fourteen centuries
+    for k in range(int((E['ise'] - 1.0 - E['firm']) / (B / 2))):
+        nm_ = relay[k % 4] if (k // 8) % 2 == 0 else ['D4', 'B4', 'A4', 'E4'][k % 4]
+        S.add(koto(hz(nm_), 1.6, 0.4 + 0.1 * (k % 4 == 0)), E['firm'] + k * B / 2, 0.16, 0.2 * np.sin(k))
+    sho_chord(E['ise'] - 0.3, 11.0, g=0.11)                                         # Ise, in its cedars
+    strum(E['iserebuilt'], ['D4', 'A4', 'D5', 'E5'], step=0.08, g=0.22, vel=0.6); S.add(bz(hz('D3'), 5, 0.7), E['iserebuilt'], 0.24)
+    S.line(THEME_B, E['iserebuilt'] + 2.2, 'shaku', beat=0.72, g=0.28)
+    S.add(koto(hz('D4'), 4.0, 0.6), E['forgotten'] + 0.4, 0.26)
+    # ------------------------------------------------------------- 5. the great buddha
+    sho_chord(169.2, 9.5, g=0.12)
+    S.line(THEME_A, 170.0, 'shaku', beat=0.8, oct=-1, g=0.26)
+    S.beats(170.0, 181.0, 3.0, lambda vel: taiko(vel * 0.6, 50), g=0.3, accent=2)
+    S.add(bonsho(1.0, 82, 14.0), E['buddha'], 0.6)
+    for nm_ in ['D2', 'A2']: S.add(choir(hz(nm_), 7.0, 0.8, 'o'), E['buddha'] + 0.2, 0.08)
+    low(E['bronzeall'] - 0.3, 5.0, g=0.16)
+    S.arp(E['brush'], 2, koto, sub=2, g=0.13, oct=1, vel=0.5)
+    S.chords(E['thousands'] - 0.2, 1, choir, prog=PROG, g=0.08, vowel='a'); S.chords(E['thousands'] - 0.2, 1, bowed, prog=PROG, g=0.13, bright=2000, attack=1.0)
+    S.add(koto(hz('D5'), 3.0, 0.8), E['paint'] + 0.4, 0.3); S.add(bz(hz('D4'), 4.0, 0.7), E['paint'] + 0.4, 0.22); S.add(bonsho(0.6, 98), E['paint'] + 0.5, 0.3)
+    # ------------------------------------------------------------- 6. the court of beauty
+    S.add(biwa(hz('D2'), 3, 0.8), E['heiankyo'] - 0.1, 0.36, -0.2); S.add(biwa(hz('A2'), 3, 0.7), E['heiankyo'] + 0.5, 0.32, -0.2)
+    S.phrase(THEME_A, E['heiankyo'] + 0.4, koto, beat=0.65, g=0.30, vel=0.7)
+    sho_chord(E['thousandyrs'] - 0.3, 5.0, g=0.10)
+    S.line(THEME_B, E['poetry'] - 0.4, 'shaku', beat=0.7, g=0.30)                   # moon-viewing
+    for i in range(12): S.add(koto(hz(yo('D4', 'D6')[i % 11]), 2.0, 0.4 + i * 0.02), E['layers'] + i * 0.13, 0.15, -0.5 + i * 0.09)   # twelve layers
+    strum(E['kana'], yo('G4', 'E6'), step=0.08, g=0.18, vel=0.5); strum(E['kana'] + 1.2, list(reversed(yo('D4', 'B5'))), step=0.09, g=0.16, vel=0.45)
+    low(E['murasaki'] - 0.6, 10.0, names=('D3',), g=0.12)
+    S.phrase(THEME_A, E['murasaki'] + 0.4, koto, beat=0.8, g=0.30, vel=0.6)          # by lamplight
+    S.phrase(THEME_B, E['novel'] + 1.0, koto, beat=0.7, g=0.26, vel=0.55)
+    strum(E['roofs'], yo('D4', 'D6'), step=0.09, g=0.18, vel=0.5); sho_chord(E['roofs'] + 0.2, 5.0, g=0.10)
+    S.chords(E['inside'], 1, bowed, prog=PROG, g=0.12, bright=1800, attack=1.0)
+    # ------------------------------------------------------------- 7. the warriors (the biwa of the war tales)
+    S.add(taiko(1.0, 48), E['samurai'], 0.45)
+    S.phrase([('D2', 1), ('A2', 0.5), ('D3', 0.5), ('E3', 2), ('D3', 1), ('A2', 3)], E['samurai'] + 0.3, biwa, beat=0.6, g=0.42)
+    S.add(taiko(0.7, 50), E['shogun'], 0.32); S.add(biwa(hz('D2'), 3, 0.9), E['shogun'] + 0.1, 0.36)
+    low(E['shogunates'], 4.0, g=0.12)
+    S.beats(E['mongols'], E['kamikaze'] - 0.2, B / 2, lambda vel: taiko(vel * 0.7, 56), g=0.28, accent=4)   # the Mongols: no melody
+    low(E['mongols'], 11.0, names=('D2', 'Eb2', 'A2'), g=0.15, attack=2.0)
+    for k in range(3): S.add(timpani(55.0, 0.6), E['storm'] + k * 0.9, 0.24)
+    S.add(horagai(196, 3.0, 0.8), E['kamikaze'] - 0.2, 0.26, -0.3)
+    sho_chord(E['kamikaze'], 5.0, g=0.12); S.add(choir(hz('D3'), 5.0, 0.8, 'o'), E['kamikaze'], 0.08)
+    fold = [0.6] * 4 + [0.3] * 8 + [0.15] * 16                                     # folded again and again: the hammer doubles
+    tt = E['folding']
+    for i, d in enumerate(fold): S.add(shime(0.5 + 0.3 * (i % 2 == 0), 210), tt, 0.16, 0.2); tt += d
+    S.add(koto(hz('D3'), 3, 0.6), E['folding'], 0.22)
+    low(E['clay'], 2.4, names=('D2',), g=0.12)
+    S.add(koto(hz('A4'), 3.5, 0.7, bend=2), E['hard'] + 0.1, 0.28)                   # after the plunge: silence, then one note
+    S.line([('D5', 1), ('B4', 0.5), ('A4', 0.5), ('G4', 1), ('E4', 2)], E['curve'] + 0.1, 'shaku', beat=0.7, g=0.32)
+    # ------------------------------------------------------------- 8. gold and stillness
+    strum(E['kinkaku'] - 0.2, yo('D4', 'D6'), step=0.06, g=0.2, vel=0.55); sho_chord(E['kinkaku'], 7.0, g=0.11)
+    S.phrase(THEME_A, E['kinkaku'] + 0.6, koto, beat=0.62, g=0.30, vel=0.7)
+    S.chords(E['kinkaku'] + 0.2, 3, bowed, prog=PROG, g=0.11, bright=1800, attack=1.2)
+    for k, dt in enumerate([0, 1.2, 2.0, 3.2, 4.2]):                                 # Noh: the drum, and the drummer's call
+        S.add(tsuzumi(0.9, 260), E['noh'] + dt, 0.34, 0.3)
+        if k % 2 == 0: S.add(hum(hz('A3') * (1 if k else 0.9), 0.5, 0.7, 'o'), E['noh'] + dt - 0.45, 0.12, 0.3)
+    S.line([('E4', 1), ('A4', 1.5), ('G4', 0.5), ('E4', 2), ('D4', 2)], E['noh'] + 0.4, 'shaku', beat=0.6, g=0.28, pan=-0.2)
+    S.add(bz(hz('A3'), 6.0, 0.6), E['raked'] + 0.2, 0.28)                            # a Zen garden: almost nothing
+    S.line([('D4', 4)], E['raked'] + 2.6, 'shaku', beat=0.8, g=0.22)
+    S.phrase([('D4', 1), ('E4', 1), ('A4', 2)], E['bowl'] + 0.3, koto, beat=0.7, g=0.22, vel=0.5)
+    S.add(koto(hz('Eb3'), 2.5, 0.6), E['staples'] + 0.3, 0.2)
+    S.phrase(THEME_B, E['anotherway'] + 0.2, koto, beat=0.6, g=0.26, vel=0.6)
+    strum(E['gold'], yo('D4', 'D6'), step=0.07, g=0.2, vel=0.5); S.chords(E['gold'], 2, bowed, prog=WARM, g=0.13, bright=2000, attack=1.2)
+    sho_chord(E['beautiful'], 4.0, g=0.10)
+    S.line(THEME_A, E['kintsugi'] + 0.1, 'shaku', beat=0.68, g=0.36)                 # kintsugi: the theme
+    S.arp(E['kintsugi'], 3, koto, sub=2, g=0.12, oct=1, vel=0.45)
+    S.add(taiko(0.9, 46), E['fellout'], 0.4); S.add(taiko(0.7, 46), E['fellout'] + B * 2, 0.34)
+    low(E['burned'], 7.0, names=('D2', 'Eb2'), g=0.16); S.add(timpani(49.0, 0.7), E['burned'] + 1.5, 0.28)
+    # ------------------------------------------------------------- 9. guns and tea
+    S.phrase([('D4', 0.5), ('E4', 0.5), ('F#4', 0.5), ('A4', 1), ('G4', 0.5), ('F#4', 1), ('E4', 1), ('D4', 2)], E['portuguese'] + 0.3, pluck, beat=0.42, g=0.24, pan=0.4, bright=0.6)   # a guitar from the ships
+    S.add(taiko(0.8, 50), E['warlords'], 0.36); S.add(taiko(0.8, 50), E['warlords'] + 1.2, 0.36); S.add(taiko(0.9, 48), E['together'], 0.42)
+    S.beats(E['together'], E['rikyu'] - 1.6, B / 2, shime, g=0.15, accent=4)
+    S.beats(E['together'], E['rikyu'] - 1.6, B * 2, lambda vel: taiko(vel * 0.6, 50), g=0.26, accent=2)
+    S.chords(E['castles'] - 0.2, 2, bowed, prog=PROG, g=0.15, bright=2200, attack=0.8); sho_chord(E['castles'], 5.0, g=0.10)
+    S.line(THEME_A, E['castles'] + 0.2, 'shaku', beat=0.55, g=0.30)
+    S.line(THEME_B, E['rikyu'] + 0.6, 'shaku', beat=0.85, g=0.30)                   # the tea room, in the rain
+    for i, nm_ in enumerate(['D4', 'A3', 'E4']): S.add(koto(hz(nm_), 3.0, 0.45), E['door'] + i * 1.6, 0.18)
+    S.add(koto(hz('D3'), 3.5, 0.6), E['bow'] + 0.2, 0.24)
+    strum(E['goldroom'] - 0.1, yo('D4', 'D6'), step=0.05, g=0.2, vel=0.6); sho_chord(E['goldroom'], 4.5, g=0.12, oct=1)
+    for i, nm_ in enumerate(['D4', 'A4', 'E5']): S.add(bz(hz(nm_), 4.0, 0.6), E['goldroom'] + 0.2 + i * 0.25, 0.22)
+    S.add(horagai(185, 3.2, 0.8), E['fog'] + 0.2, 0.26, -0.5); S.add(horagai(220, 3.0, 0.7), E['fog'] + 1.8, 0.2, 0.5)   # two conches across the fog
+    S.beats(E['fog'], E['decided'] - 0.1, 1.5, lambda vel: taiko(vel * 0.6, 48), g=0.3, accent=2)
+    low(E['fog'], 6.0, names=('D2', 'A2'), g=0.14)
+    S.add(taiko(1.0, 44), E['decided'], 0.5); S.add(timpani(55.0, 0.9), E['decided'], 0.34); S.chords(E['decided'], 1, bowed, prog=WARM, g=0.15, bright=2000, attack=0.6)
+    sho_chord(E['decided'] + 0.8, 4.0, g=0.10)
+    # ------------------------------------------------------------- 10. the floating world
+    S.phrase(THEME_A, E['peace'] + 0.2, koto, beat=0.6, g=0.30, vel=0.7)
+    S.arp(E['peace'], 3, koto, sub=2, g=0.12, oct=1, vel=0.45); sho_chord(E['peace'], 6.0, g=0.08)
+    S.add(taiko(0.8, 44), E['closed'] + 0.1, 0.34)
+    S.add(lp(render([('A4', 0.5), ('B4', 0.5), ('C#5', 0.5), ('D5', 1), ('A4', 1)], harpsi, beat=0.38), 2200), E['dutch'] - 0.2, 0.3, 0.4)   # the Dutch
+    S.phrase([('D4', 0.5), ('E4', 0.5), ('F#4', 0.5), ('A4', 1.5)], E['chinese'] + 0.1, gz, beat=0.4, g=0.2, pan=-0.4)                      # the Chinese
+    edo = ['D3', 'A3', 'D4', 'A3', 'E4', 'D4', 'A3', 'G3']                          # Edo: the shamisen, and the city's drum
+    for k in range(int((E['fireworks'] - 0.6 - E['edo']) / (B / 2))): S.add(shamisen(hz(edo[k % 8]), 0.7, 0.55 + 0.25 * (k % 4 == 0)), E['edo'] + k * B / 2, 0.18, 0.25)
+    S.beats(E['edo'], E['fireworks'] - 0.6, B, shime, g=0.14, accent=4, pan=-0.2)
+    S.phrase(THEME_B, E['million'] + 0.2, shamisen, beat=0.45, g=0.26, pan=-0.1)
+    for dt in [0, 0.5, 0.85, 1.1, 1.3, 1.45, 1.57, 1.67, 1.75]: S.add(hyoshigi(0.8), E['kabuki'] - 0.4 + dt, 0.3, 0.1)   # ki: the curtain's clappers
+    S.add(taiko(0.9, 50), E['kabuki'] + 1.6, 0.36)
+    S.chords(E['fireworks'], 2, bowed, prog=PROG, g=0.11, bright=1600, attack=1.5); sho_chord(E['fireworks'] + 0.4, 5.0, g=0.07)
+    FW = [419.8, 420.6, 421.3, 422.0, 422.9, 423.6]
+    for i, tf in enumerate(FW): S.add(koto(hz(['A4', 'D5', 'B4', 'E5', 'G4', 'D5'][i]), 2.2, 0.5), tf + 0.15, 0.16, -0.5 + i * 0.2)
+    S.line([('A4', 4)], E['oldpond'] - 1.4, 'shaku', beat=0.8, g=0.22)              # Bashō: an old pond
+    S.add(koto(hz('D4'), 4.5, 0.6, bend=-1), E['water'] + 0.1, 0.28); S.add(bz(hz('D3'), 5, 0.5), E['water'] + 0.15, 0.18)
+    S.arp(E['carve'] - 0.4, 2, shamisen, sub=2, g=0.10, oct=1, vel=0.5)
+    for i, tc in enumerate([E['colour'], E['colour'] + 0.8, E['colour'] + 1.6, E['colour'] + 2.4]): S.add(koto(hz(['D4', 'G4', 'A4', 'D5'][i]), 2.0, 0.5), tc, 0.22)   # colour by colour
+    S.phrase([('A4', 0.5), ('B4', 0.5), ('A4', 0.5), ('G4', 0.5), ('E4', 1)], E['noodles'] + 0.2, shamisen, beat=0.4, g=0.22)
+    S.beats(E['wave'] - 1.6, E['wave'], 0.1, lambda vel: taiko(vel * 0.4, 70), g=0.2, accent=99)   # the Great Wave
+    S.add(taiko(1.0, 44), E['wave'], 0.52); S.add(timpani(49.0, 1.0), E['wave'], 0.36)
+    S.chords(E['wave'], 2, bowed, prog=DARK, g=0.15, bright=2000, attack=0.6)
+    strum(E['wave'] + 0.1, list(reversed(yo('D3', 'D6'))), step=0.04, g=0.18, vel=0.6)
+    S.line(THEME_A, E['wave'] + 0.6, 'shaku', beat=0.6, g=0.34)
+    piano_par = [('B4', 1), ('A4', 0.5), ('G4', 0.5), ('E4', 1), ('G4', 1), ('A4', 2)]   # Europe: a piano, as Debussy might have heard the prints
+    S.phrase(piano_par, E['europe'] + 0.2, piano, beat=0.6, g=0.26, vel=0.6)
+    S.phrase(piano_par, E['europe'] + 0.2, lambda f, d, vel=1.0: piano(f * 0.7492, max(d, 2.6), vel), beat=0.6, g=0.17, vel=0.55)   # in parallel fourths
+    S.chords(E['europe'], 2, bowed, prog=WARM, g=0.12, bright=1800, attack=1.4)
+    # ------------------------------------------------------------- 11. black ships
+    low(E['y1853'], 13.0, names=('D2', 'Eb2'), g=0.15, attack=2.5)
+    for nm_ in ['A1', 'D2']: S.add(horn(hz(nm_) * 2, 6.0, 0.5), E['blackhulled'], 0.2)
+    for k in range(4): S.add(timpani(49.0, 0.7), E['salute'] + k * 1.1, 0.26)
+    S.add(taiko(0.9, 46), E['shogunfell'], 0.4)
+    S.beats(E['raced'], E['ainu'] - 0.6, B / 2, shime, g=0.15, accent=4)            # Meiji: racing to catch up
+    S.line(THEME_A, E['meiji'] + 0.3, 'shaku', beat=0.5, g=0.22)
+    S.phrase(THEME_A, E['meiji'] + 0.3, horn, beat=0.5, g=0.32, oct=-1, vel=0.7)
+    S.chords(E['raced'], 4, bowed, prog=WARM, g=0.13, bright=2200, attack=0.5)
+    for i, k in enumerate(['railways', 'factories', 'schools', 'parliament']):
+        for j, nm_ in enumerate(WARM[i % 4]): S.add(horn(hz(nm_), 0.7, 0.8), E[k], 0.12, -0.3 + j * 0.2)
+    ainu = ['A3', 'D4', 'E4', 'A4', 'E4', 'D4']                                     # the Ainu: tonkori and mukkuri
+    for k in range(8): S.add(tonkori(hz(ainu[k % 6]), 1.8, 0.6), E['ainu'] + k * 0.4, 0.22, -0.3)
+    for k in range(3): S.add(mukkuri(1.3, 98, 0.8), E['ainu'] + 0.2 + k * 1.1, 0.22, 0.3)
+    S.phrase([('D4', 0.5), ('F#4', 0.5), ('G4', 0.5), ('A4', 1), ('C#5', 0.5), ('D5', 1), ('A4', 1.5)], E['ryukyu'] + 0.2, sanshin, beat=0.42, g=0.3, pan=0.2)   # Ryukyu: the sanshin
+    S.beats(E['russia'], E['russia'] + 6.0, B / 2, lambda vel: taiko(vel * 0.6, 52), g=0.26, accent=4)
+    S.chords(E['russia'], 2, bowed, prog=DARK, g=0.14, bright=1800, attack=0.6); S.add(horn(hz('D3'), 4.0, 0.7), E['russia'] + 3.0, 0.2)
+    # ------------------------------------------------------------- 12. empire and ashes: no melody
+    low(E['korea'] - 2.8, 15.0, names=('D2', 'A2', 'Eb3'), g=0.13, attack=3.0)
+    for k in range(6): S.add(timpani(49.0, 0.4), E['invaded'] + k * 1.5, 0.22)
+    for nm_ in ['D2', 'A2']: S.add(choir(hz(nm_), 6.0, 0.6, 'o'), E['millions'], 0.07)
+    S.add(timpani(55.0, 0.8), E['pearlharbor'] + 0.2, 0.3)
+    low(E['bombers'], 12.0, names=('D2', 'Eb2'), g=0.12, bright=700, attack=2.0)
+    m_ = int(9 * SR); S.add(lp(np.sin(TAU * 36 * np.arange(m_) / SR), 120) * env_ar(m_, 1.0, 5.0) * 0.5, E['flash'] + 0.3, 0.4)   # the flash: silence, and something felt more than heard
+    S.add(bonsho(1.0, 92, 14.0), E['surrendered'], 0.5)                              # one bell
+    low(E['surrendered'] + 0.4, 8.0, names=('D2',), g=0.12)
+    S.phrase(SAD, E['sadako'] + 0.2, koto, beat=0.8, g=0.28, vel=0.55)              # Sadako's cranes
+    for i in range(8): S.add(koto(hz(['D5', 'A4', 'G4', 'D5', 'E5', 'A4', 'B4', 'D5'][i]), 2.0, 0.35), E['cranes'] + 0.3 + i * 0.36, 0.14, -0.4 + i * 0.1)
+    sho_chord(E['wishpeace'] - 0.2, 5.0, g=0.10); S.chords(E['wishpeace'], 1, bowed, prog=WARM, g=0.12, bright=1800, attack=1.4)
+    # ------------------------------------------------------------- 13. the miracle
+    S.phrase(THEME_B, E['rebuilt'] + 0.2, piano, beat=0.6, g=0.30, vel=0.55)       # a piano, rebuilding
+    S.chords(E['constitution'], 2, bowed, prog=WARM, g=0.13, bright=2000, attack=1.0)
+    for k in range(int((E['toyota'] - E['tenpercent']) / (B / 2))): S.add(pulse(hz(['D3', 'A3', 'D4', 'E4'][k % 4]), 0.3, 0.3 + 0.5 * k / 18), E['tenpercent'] + k * B / 2, 0.2, 0.2)   # growing
+    S.arp(E['tenpercent'], 2, piano, prog=WARM, sub=2, g=0.12, oct=1, vel=0.45)
+    S.beats(E['toyota'], E['cord'], B / 2, lambda vel: pulse(hz('D3'), 0.25, vel), g=0.22, accent=2)   # the line
+    S.beats(E['toyota'], E['cord'], B, shime, g=0.12, accent=4)
+    for i, nm_ in enumerate(['A4', 'D5']): S.add(bz(hz(nm_), 3.0, 0.5), E['cord'] + 0.1 + i * 0.3, 0.2, 0.3)   # the andon chime: the line stops
+    S.beats(E['fix'] + 0.4, E['radio'] - 0.6, B / 2, lambda vel: pulse(hz('D3'), 0.25, vel), g=0.16, accent=2)
+    KZ = [[('D4', 1), ('E4', 1), ('A4', 2)], [('D4', 1), ('E4', 0.5), ('G4', 0.5), ('A4', 2)], [('D4', 0.5), ('E4', 0.5), ('G4', 0.5), ('A4', 0.5), ('B4', 1), ('D5', 1)]]
+    for i, ph_ in enumerate(KZ): S.phrase(ph_, 597.8 + i * 1.5, piano, beat=0.32, g=0.24, vel=0.5 + i * 0.1)   # kaizen: the same phrase, a little better each time
+    S.add(bp(render(THEME_A, piano, beat=0.32, oct=1), 500, 2000) * 2.2, E['radio'] + 0.4, 0.26, 0.35)   # the pocket radio
+    S.phrase([('D4', 0.5), ('r', 0.5), ('A4', 0.5), ('G4', 0.5), ('A4', 1)], E['largerpockets'] + 0.4, koto, beat=0.35, g=0.2, vel=0.5)
+    S.add(taiko(0.9, 50), E['olympics'], 0.4); S.add(timpani(73.4, 0.9), E['olympics'], 0.32)   # 1964
+    S.phrase(THEME_A, E['olympics'] + 0.2, horn, beat=0.48, g=0.34, vel=0.8); S.chords(E['olympics'], 2, bowed, prog=WARM, g=0.15, bright=2400, attack=0.4)
+    S.beats(E['shinkansen'], E['shinkansen'] + 9.0, B / 2, lambda vel: pulse(hz('D3'), 0.25, vel), g=0.2, accent=2)   # the bullet train
+    S.arp(E['shinkansen'], 3, piano, prog=WARM, sub=4, g=0.10, oct=1, vel=0.4)
+    S.line(THEME_B, E['shinkansen'] + 0.6, 'shaku', beat=0.55, g=0.26); S.chords(E['shinkansen'], 3, bowed, prog=WARM, g=0.13, bright=2400, attack=0.6)
+    S.chords(E['second'] - 0.2, 2, bowed, prog=WARM, g=0.16, bright=2400, attack=0.5); S.chords(E['second'] - 0.2, 2, horn, prog=WARM, g=0.10, vel=0.6)
+    S.add(timpani(73.4, 0.8), E['second'], 0.3)
+    g0, g1 = E['glowed'], E['burst'] - 0.1                                           # the 1980s: city pop
+    S.beats(g0, g1, B, kick, g=0.30, accent=2); S.beats(g0 + B, g1, B * 2, softsnare, g=0.22, accent=1)
+    for k in range(int((g1 - g0) / (B * 4))):
+        ch = POP[k % 4]; t0 = g0 + k * B * 4
+        S.add(ebass(hz(ch[0]), 0.6, 0.9), t0, 0.32); S.add(ebass(hz(ch[0]), 0.3, 0.7), t0 + B * 1.5, 0.26); S.add(ebass(hz(ch[0]) * 2, 0.3, 0.6), t0 + B * 2.5, 0.22)
+        for j, nm_ in enumerate(ch[1:]): S.add(epiano(hz(nm_), 1.4, 0.6), t0 + B * (0 if j == 0 else 0.02 * j), 0.14, -0.3 + j * 0.3); S.add(epiano(hz(nm_), 0.9, 0.45), t0 + B * 2.5, 0.10, -0.3 + j * 0.3)
+        S.add(pad(hz(ch[1]), B * 4, 0.6), t0, 0.12)
+    S.phrase(THEME_A, g0 + B * 4, epiano, beat=0.42, g=0.24, oct=1, vel=0.6)
+    S.phrase(THEME_B, E['palace'] + 0.4, epiano, beat=0.42, g=0.22, oct=1, vel=0.55)
+    for nm_ in POP[0][1:]: S.add(glidepad(hz(nm_), hz(nm_) * 0.5, 2.2, 0.8), E['burst'], 0.3)   # the bubble bursts
+    # ------------------------------------------------------------- 14. ink and light
+    S.phrase(THEME_B, E['tezuka'] - 3.4, piano, beat=0.75, g=0.24, vel=0.45)       # a student drawing late at night
+    S.add(piano(hz('D5'), 2.0, 0.5), E['closeups'], 0.2); S.add(piano(hz('D3'), 2.5, 0.5), E['longshots'], 0.22)
+    S.chords(E['eyes'], 1, bowed, prog=WARM, g=0.12, bright=1800, attack=0.8)
+    for k in range(int((E['anime'] - 0.8 - E['everyone']) / (B / 2))): S.add(piano(hz(['D4', 'A4', 'E4', 'A4'][k % 4]), 0.6, 0.35), E['everyone'] + k * B / 2, 0.13, 0.2)   # the commuter train
+    S.add(ebass(hz('D2'), 0.5, 0.7), E['everyone'], 0.2); S.beats(E['everyone'], E['anime'] - 0.8, B * 2, lambda vel: ebass(hz('D2'), 0.4, vel), g=0.2, accent=2)
+    S.add(timpani(73.4, 0.9), E['anime'], 0.32)                                      # anime: the orchestra
+    S.chords(E['anime'], 2, bowed, prog=WARM, g=0.17, bright=2600, attack=0.4); S.chords(E['anime'], 2, horn, prog=WARM, g=0.09, vel=0.7)
+    S.phrase(THEME_A, E['anime'] + 0.2, horn, beat=0.42, g=0.28, vel=0.8); S.line(THEME_A, E['anime'] + 0.2, 'shaku', beat=0.42, g=0.18)
+    S.beats(E['framebyframe'], E['foursecond'] - 0.2, B / 4, lambda vel: piano(hz('A4'), 0.2, vel * 0.4), g=0.12, accent=4)   # frame by frame
+    S.chords(E['foursecond'], 1, bowed, prog=[['D3', 'A3', 'E4', 'A4']], g=0.12, bright=1600, attack=1.2)
+    S.phrase(THEME_B, E['year'] - 0.2, piano, beat=0.7, g=0.22, vel=0.45)
+    w0 = E['spirited'] - 0.6; WB = 0.42                                              # an anime summer: a waltz
+    WZ = [['D2', 'A3', 'D4', 'F#4'], ['B1', 'F#3', 'B3', 'D4'], ['G1', 'D3', 'G3', 'B3'], ['A1', 'E3', 'A3', 'C#4']]
+    for k in range(int((E['nintendo'] - 0.4 - w0) / (WB * 3))):
+        ch = WZ[(k // 2) % 4]; t0 = w0 + k * WB * 3
+        S.add(piano(hz(ch[0]) * 2, 1.2, 0.5), t0, 0.2, -0.2)
+        for b in (1, 2):
+            for nm_ in ch[1:]: S.add(piano(hz(nm_), 0.5, 0.3), t0 + b * WB, 0.10, 0.2)
+    SUMMER = [('A4', 1), ('D5', 2), ('E5', 1), ('F#5', 2), ('E5', 1), ('D5', 1), ('B4', 1), ('A4', 4), ('r', 2), ('G4', 1), ('A4', 2), ('B4', 1), ('D5', 2), ('E5', 1), ('D5', 5)]
+    S.add(lp(render(SUMMER, lambda f, d, vel=1.0: bowed(f, d, vel, bright=2400, attack=0.25), beat=WB, oct=0), 2600), w0 + WB * 3, 0.32, -0.1)
+    S.chords(E['roundworld'], 2, bowed, prog=WARM, g=0.13, bright=2400, attack=0.6); S.chords(E['roundworld'], 1, choir, prog=WARM, g=0.06, vowel='a')
+    S.add(timpani(73.4, 0.8), E['roundworld'], 0.28)
+    S.phrase([('D4', 0.5), ('A4', 0.5), ('G4', 1)], E['nintendo'] + 0.2, koto, beat=0.4, g=0.22, vel=0.55); S.phrase([('E4', 0.5), ('G4', 0.5), ('D4', 1)], E['playingcards'] + 0.2, shamisen, beat=0.4, g=0.22)
+    S.phrase(THEME_A, E['games'] + 0.1, chip, beat=0.26, g=0.9, oct=0)               # the theme, as a game might play it
+    S.beats(E['games'] + 0.1, E['games'] + 0.1 + 15 * 0.26 * 1.0, 0.52, lambda vel: chip(hz('D3'), 0.2, vel * 1.4), g=0.9, accent=2)
+    # ------------------------------------------------------------- 15. the hands
+    S.phrase(THEME_A, E['crafts'] + 0.2, koto, beat=0.6, g=0.30, vel=0.65)
+    S.line(THEME_B, E['companies'] + 2.6, 'shaku', beat=0.65, g=0.28); sho_chord(E['crafts'], 6.0, g=0.08)
+    S.arp(E['inn'] - 0.2, 3, koto, sub=2, g=0.11, oct=1, vel=0.42)
+    for k in range(10): S.add(shamisen(hz(['D3', 'A3', 'D4', 'E4'][k % 4]), 0.6, 0.45), E['sushichefs'] + k * B / 2, 0.12, 0.2)
+    S.add(shime(0.8), E['swordsmiths'], 0.2); S.add(shime(0.6), E['swordsmiths'] + 0.6, 0.18)
+    sho_chord(E['ise2013'], 6.0, g=0.11); strum(E['sixtysecond'] + 0.4, ['D4', 'A4', 'D5', 'E5'], step=0.07, g=0.22, vel=0.55)
+    low(E['searose'] - 1.0, 12.0, names=('D2', 'Eb2', 'A2'), g=0.13, attack=2.5)     # 2011: no melody
+    S.add(timpani(49.0, 0.6), E['searose'] + 0.4, 0.24); S.add(timpani(49.0, 0.4), E['fukushima'], 0.2)
+    S.add(bonsho(0.9, 92, 12.0), E['oldstones'] + 0.2, 0.42)                          # the old stones
+    for nm_ in ['D3', 'A3']: S.add(choir(hz(nm_), 5.0, 0.6, 'o'), E['dontbuild'] - 0.2, 0.06)
+    S.chords(E['cherrytrees'] - 1.0, 2, bowed, prog=WARM, g=0.12, bright=1800, attack=1.6)   # cherry trees where the water stopped
+    S.phrase(THEME_B, E['cherrytrees'] - 0.6, koto, beat=0.62, g=0.28, vel=0.6); S.phrase(THEME_B, E['cherrytrees'] + 0.0, piano, beat=0.62, g=0.12, oct=-1, vel=0.4)
+    S.beats(E['floats'] - 0.4, E['asteroids'], B / 2, lambda vel: pulse(hz('D3'), 0.25, vel), g=0.18, accent=2)   # the floating train
+    S.arp(E['floats'] - 0.4, 3, piano, prog=WARM, sub=2, g=0.10, oct=1, vel=0.4)
+    for nm_ in ['D3', 'A3', 'E4']: S.add(pad(hz(nm_), 6.0, 0.7, bright=1000, attack=1.5), E['asteroids'] - 0.4, 0.14)
+    for i, nm_ in enumerate(['A4', 'E5', 'D5', 'B4']): S.add(piano(hz(nm_), 2.0, 0.35), E['asteroids'] + 0.6 + i * 0.9, 0.14, -0.3 + i * 0.2)
+    S.chords(793.6, 1, bowed, prog=WARM, g=0.12, bright=1800, attack=1.6); sho_chord(794.0, 4.5, g=0.08)
+    # ------------------------------------------------------------- 16. mended with gold
+    sho_chord(E['pull'] - 0.4, 6.0, g=0.11); low(E['pull'], 6.0, g=0.12)
+    for i, k in enumerate(['war', 'fire', 'quake', 'seaend']):                       # each break: a blow, and a note out of the scale
+        S.add(taiko(0.8 + 0.05 * i, 46), E[k], 0.38); S.add(koto(hz(['Eb3', 'Bb2', 'Eb3', 'A2'][i]), 2.4, 0.6), E[k] + 0.05, 0.2)
+    for i in range(5): strum(E['mended'] + i * 0.5, yo('D4', 'B5')[i:i + 5], step=0.08, g=0.17, vel=0.5, pan=-0.4 + i * 0.2)   # gold laid along each crack
+    S.phrase(THEME_A, E['byhand'] + 0.2, koto, beat=0.62, g=0.28, vel=0.6)
+    S.chords(E['byhand'], 3, bowed, prog=PROG, g=0.13, bright=2000, attack=1.4)
+    S.line(THEME_B, E['bowlend'] - 0.4, 'shaku', beat=0.65, g=0.30); sho_chord(E['bowlend'], 5.0, g=0.09)
+    S.beats(E['bowlend'], E['shine'], 1.5, lambda vel: taiko(vel * 0.4, 48), g=0.24, accent=2)
+    S.add(taiko(1.0, 44), E['shine'], 0.5); S.add(timpani(73.4, 0.9), E['shine'], 0.32)  # they shine: everything, together
+    S.chords(E['shine'], 2, bowed, prog=PROG, g=0.17, bright=2400, attack=0.5); S.chords(E['shine'], 2, choir, prog=PROG, g=0.07, vowel='a')
+    S.chords(E['shine'], 2, horn, prog=PROG, g=0.08, vel=0.6); sho_chord(E['shine'], 6.0, g=0.10)
+    strum(E['shine'] + 0.05, yo('D4', 'D6'), step=0.05, g=0.2, vel=0.55)
+    S.line(THEME_A, E['shine'] + 0.3, 'shaku', beat=0.62, g=0.34); S.phrase(THEME_A, E['shine'] + 0.3, piano, beat=0.62, g=0.14, oct=-1, vel=0.45)
+    low(E['title'], 20.0, names=('D2', 'A2', 'D3'), g=0.09, bright=1200, attack=3.0); sho_chord(E['title'] + 0.2, 11.0, g=0.06)
+    S.line(OPEN, E['title'] + 0.8, 'shaku', beat=0.8, g=0.5, pan=0.1)                # and the first sound returns, alone
+    S.add(koto(hz('D4'), 5.0, 0.55), E['title'] + 12.2, 0.24); S.add(bonsho(0.6, 98, 12.0), E['title'] + 12.8, 0.3)
+    # a drone under everything, the earth note D: gone in the moment of the bomb, and under the 1980s and the games
     n = S.n
     d = drone(n, [(hz('D2'), 0.5), (hz('A2'), 0.3), (hz('D3'), 0.14)])
-    S.dry += d * curve(n, [(0, 0), (3, 0.10), (11, 0.12), (21, 0.14), (46, 0.18), (60, 0.2), (97, 0.12), (107, 0.2), (115, 0.12), (139, 0.14), (145, 0.22), (183, 0.18), (188, 0.12), (239, 0.1), (258, 0.12), (296, 0.16), (316, 0.1), (355, 0.12), (404, 0.12), (428, 0.08), (448, 0.12), (457, 0.07), (474, 0.08), (482, 0.14), (490, 0.06), (509, 0.12), (524, 0.12), (552, 0.05), (562, 0.14), (575, 0.12), (596, 0.2), (607, 0.14), (643, 0.2), (661, 0.12), (683, 0.18), (697, 0.12), (715, 0.16), (735, 0.2), (dur - 1, 0)])[:, None]
+    S.dry += d * curve(n, [(0, 0), (3, 0.08), (12, 0.12), (46, 0.16), (77, 0.12), (104, 0.16), (125, 0.2), (169, 0.16), (232, 0.12), (247, 0.08), (259, 0.14), (276, 0.16), (296, 0.1), (331, 0.08), (338, 0.14), (390, 0.16), (420, 0.1), (446, 0.16), (460, 0.1), (511, 0.08), (547.8, 0.06), (548.4, 0), (556, 0), (558, 0.1), (574, 0.14), (590, 0.12), (643, 0.1), (644.4, 0), (660, 0), (662, 0.1), (688, 0.16), (717.6, 0.12), (718.4, 0), (722, 0), (724, 0.16), (755, 0.08), (777, 0.14), (800, 0.16), (820, 0.22), (dur - 1, 0)])[:, None]
     wet = reverb(S.wet, rt=2.8, wet=0.42, bright=2400)
-    # the moon over Li Bai's bed, and the far side of the Moon, sound a little further away
-    far = curve(n, [(0, 0), (296, 0), (298, 1), (316, 1), (318, 0), (595, 0), (597, 1), (606, 1), (608, 0), (dur, 0)])
+    # the Zen garden, Bashō's pond and the ending sound a little further away
+    far = curve(n, [(0, 0), (295, 0), (296, 1), (301, 1), (302, 0), (424, 0), (425, 1), (433, 1), (434, 0), (825, 0), (827, 1), (dur, 1)])
     wet += reverb(S.wet * far[:, None], rt=4.5, wet=0.5, bright=1800, seed=11) * 0.5
     return lp(wet + S.dry, 5000)
 
@@ -663,146 +904,187 @@ def ambience(dur, EV):
         k = t0
         while k < t1: at(step(0.8 + 0.2 * rs.rand()), k, g, pan + rs.randn() * 0.1); k += every * (0.9 + 0.2 * rs.rand())
     # --- beds
-    wind = W([(0, 0), (2, 0.9), (24, 0.7), (46, 0.6), (59, 0.3), (97, 0.6), (139, 0.5), (160, 0.9), (167, 0.4), (199, 1.0), (215, 0.6), (239, 0.8), (258, 0.4), (296, 0.6), (316, 0.3), (356, 0.9), (366, 0.5), (404, 0.5), (457, 0.6), (468, 0.9), (474, 0.4), (494, 1.1), (500, 0.6), (524, 0.4), (552, 0.9), (562, 0.4), (575, 0.3), (594, 0.4), (597, 0), (606, 0), (609, 0.5), (633, 1.3), (642, 0.4), (697, 0.5), (700, 0.9), (707, 0.7), (718, 1.0), (735, 0.6), (dur, 0)])
+    E = EV
+    wind = W([(0, 0), (1.5, 0.4), (30, 0.4), (46, 0.3), (77, 0.5), (104, 0.4), (154, 0.5), (156, 0.9), (168, 0.8), (170, 0.4), (232, 0.4), (247, 0.7), (250, 1.5), (256, 1.4), (258.5, 0.3), (276, 0.3), (295, 0.3), (296, 0.6), (301, 0.6), (302, 0.3), (337, 0.4), (380, 0.5), (381, 0.9), (386, 0.8), (388, 0.3), (460, 0.4), (511, 0.6), (547.9, 0.6), (548.2, 0), (551.5, 0), (553, 0.9), (565, 0.4), (574, 0.3), (588, 0.15), (660, 0.15), (722, 0.3), (755, 0.5), (764, 0.9), (775, 0.5), (798, 0.4), (801, 0.9), (818, 0.4), (dur, 0)])
     for ch in range(2):
         w = bp(rs.randn(n), 160, 650) * (0.35 + 0.65 * slow_noise(n, 0.25, 40 + ch)) + bp(rs.randn(n), 800, 2000) * 0.08 * slow_noise(n, 0.4, 50 + ch)
         out[:, ch] += w * 0.05 * wind
-    water = W([(0, 0), (1, 0.6), (24, 0.5), (34, 0.3), (46, 0), (216, 0), (217, 0.5), (220, 0.4), (222, 0), (259, 0), (261, 0.9), (267, 0.7), (269, 0), (514, 0), (514.5, 0.4), (516, 0.4), (517, 0), (615, 0), (615.6, 1.6), (621, 1.4), (623, 0), (dur, 0)])
+    water = W([(0, 0), (28.5, 0), (29.5, 0.5), (35, 0.4), (37, 0), (46.5, 0), (47.5, 0.5), (56, 0.4), (58, 0), (278.5, 0), (280, 0.5), (287, 0.4), (288.5, 0), (424.5, 0), (425.5, 0.35), (434, 0.3), (435, 0), (731, 0), (732, 0.6), (737.5, 0.5), (738.5, 0), (dur, 0)])
     for ch in range(2):
         out[:, ch] += (lp(rs.randn(n), 500) * 0.05 + bp(rs.randn(n), 350, 1500) * 0.03 * (0.4 + 0.6 * slow_noise(n, 3, 60 + ch))) * water
-    sea = W([(0, 0), (384, 0), (385, 1), (394, 0.8), (396, 0), (421, 0), (422, 0.6), (428, 0.4), (430, 0), (528, 0), (529, 0.5), (534, 0.3), (536, 0), (622, 0), (623, 1), (632, 0.7), (634, 0), (dur, 0)])
+    sea = W([(0, 0), (246.5, 0), (247.5, 0.8), (250.4, 1.4), (256, 1.2), (258.5, 0), (340.5, 0), (341.5, 0.5), (345, 0.4), (346, 0), (398.8, 0), (399.6, 0.6), (404.6, 0.5), (405.4, 0), (445.4, 0), (446.4, 1.3), (451, 0.9), (453, 0), (462.4, 0), (463.4, 0.7), (476, 0.5), (477, 0), (497.8, 0), (498.6, 0.4), (501, 0.3), (502, 0), (503.4, 0), (504.4, 0.6), (510, 0.5), (511, 0), (528.2, 0), (529, 0.4), (532, 0), (754.8, 0), (755.8, 1.5), (760, 1.2), (764, 0.4), (766, 0), (805.8, 0), (806.4, 0.8), (809, 0), (dur, 0)])
     for ch in range(2):
         swell = 0.35 + 0.65 * (0.5 + 0.5 * np.sin(TAU * t / (6.5 + ch * 1.3) + ch)) ** 2
         out[:, ch] += (lp(rs.randn(n), 500) * 0.06 + bp(rs.randn(n), 700, 2200) * 0.02 * swell) * swell * sea
-    # frogs in the marsh, low and soft, before the flute
-    frogs = W([(0, 0), (2, 0.8), (10, 0.6), (11.5, 0.1), (20.5, 0.1), (23, 0.5), (27, 0), (dur, 0)])
+    rain = W([(0, 0), (358.2, 0), (359.4, 0.8), (371.6, 0.7), (372.6, 0), (424.8, 0), (425.6, 0.45), (433.6, 0.4), (434.4, 0), (659.4, 0), (660.4, 0.7), (666, 0.5), (668, 0), (dur, 0)])
+    for ch in range(2): out[:, ch] += (bp(rs.randn(n), 400, 2000) * 0.03 + lp(rs.randn(n), 300) * 0.02) * (0.7 + 0.3 * slow_noise(n, 2, 64 + ch)) * rain
+    k = 0.0
+    while k < dur:                                                                   # drops off the eaves
+        k += rs.exponential(1 / 5); g = rain[min(n - 1, int(k * SR))]
+        if g < 0.05: continue
+        m, tv = tvec(0.12); f = 500 + rs.rand() * 500
+        at(lp(np.sin(TAU * f * tv * (1 + 0.6 * np.exp(-tv / 0.01))) * np.exp(-tv / 0.025), 1600) * 0.012 * g, k, 1, rs.rand() - 0.5)
+    frogs = W([(0, 0), (1, 0.5), (9, 0.4), (11, 0), (47, 0), (48, 0.6), (58, 0.4), (60, 0), (dur, 0)])   # low marsh frogs, no high calls
     for c in range(5):
         k = rs.rand() * 2
-        while k < 27:
-            m, tv = tvec(0.28); f = 380 + c * 70; y = bp(rs.randn(m), f, f * 2.2) * (np.sin(TAU * 26 * tv) > 0.1) * np.sin(np.pi * tv / tv[-1])
-            at(lp(y, 1500) * 0.025 * frogs[min(n - 1, int(k * SR))], k, 1, -0.7 + c * 0.35); k += 1.2 + rs.rand() * 2.2
-    city = W([(0, 0), (276, 0), (278, 1), (286, 0.6), (288, 0), (317, 0), (318.5, 0.9), (323, 0.3), (325, 0), (477, 0), (478, 0.8), (483, 0.4), (485, 0), (535, 0), (536, 0.6), (551, 0.5), (553, 0), (575, 0), (576, 0.5), (581, 0.3), (583, 0), (675, 0), (675.5, 0.9), (682, 0.6), (683, 0), (dur, 0)])
+        while k < 62:
+            m, tv = tvec(0.28); f = 300 + c * 60; y = bp(rs.randn(m), f, f * 2.2) * (np.sin(TAU * 24 * tv) > 0.1) * np.sin(np.pi * tv / tv[-1])
+            at(lp(y, 1300) * 0.022 * frogs[min(n - 1, int(k * SR))], k, 1, -0.7 + c * 0.35); k += 1.2 + rs.rand() * 2.2
+    crowd = W([(0, 0), (183.6, 0), (184.6, 0.7), (189.6, 0.6), (190.4, 0), (405.4, 0), (406.4, 0.8), (416.8, 0.7), (417.4, 1.0), (419.4, 0.8), (420, 0.4), (424, 0.3), (424.8, 0), (479.6, 0), (480.4, 0.4), (492, 0.3), (493, 0), (616.8, 0), (617.4, 1.1), (621, 0.6), (622, 0), (644.4, 0), (645.4, 0.6), (658.8, 0.6), (659.4, 0), (676.8, 0), (677.4, 0.35), (683, 0.3), (683.6, 0), (dur, 0)])
     for ch in range(2):
         babble = sum(bp(rs.randn(n), 300 + 150 * v, 1000 + 250 * v) * (0.5 + 0.5 * np.sin(TAU * (3 + v * 0.7) * t + rs.rand() * 6)) ** 4 for v in range(4))
-        out[:, ch] += babble * 0.013 * city
-    fire = W([(0, 0), (52.2, 0), (53, 0.6), (58, 0.4), (60, 0.3), (66, 0.3), (67, 0), (323.5, 0), (324, 0.3), (329, 0.3), (330, 0), (433, 0), (433.5, 0.8), (437, 0.7), (439, 0), (490.6, 0), (491, 0.6), (494.5, 0), (dur, 0)])
+        out[:, ch] += babble * 0.013 * crowd
+    fire = W([(0, 0), (0.2, 0.5), (10.4, 0.5), (10.8, 0.8), (14, 0.6), (26, 0.4), (29, 0), (52.2, 0), (52.8, 0.4), (55, 0), (177.0, 0), (177.6, 0.6), (181, 0.4), (182, 0), (259.6, 0), (260, 0.45), (268, 0.6), (269.25, 0.6), (269.35, 0), (331.2, 0), (332, 0.9), (337, 0.7), (339, 0), (346.2, 0), (346.8, 0.35), (349, 0), (537.6, 0), (538.4, 1.1), (546, 0.8), (548.1, 0.6), (548.2, 0), (803.6, 0), (804, 0.5), (807, 0), (dur, 0)])
     for ch in range(2):
         out[:, ch] += lp(rs.randn(n), 420) * (0.5 + 0.5 * slow_noise(n, 5, 70 + ch)) * 0.08 * fire
     k = 0.0
     while k < dur:
         k += rs.exponential(1 / 9); g = fire[min(n - 1, int(k * SR))]
         if g < 0.02: continue
-        ln = int((0.002 + rs.rand() ** 2 * 0.012) * SR); f0 = 500 + rs.rand() ** 2 * 1600
-        pop = lp(bp(np.concatenate([rs.randn(ln), np.zeros(600)]), f0, f0 * 1.8) * np.exp(-np.arange(ln + 600) / (ln * 0.6)), 2400)
-        at(pop, k, g * min(0.2, 0.05 + rs.pareto(2.5) * 0.04), rs.randn() * 0.15)
-    hum_ = W([(0, 0), (562, 0), (563, 0.4), (570, 0.3), (574, 0), (643, 0), (644, 0.9), (646.6, 1.3), (660, 1.0), (663, 0.4), (674, 0.3), (675, 0), (682, 0), (683, 0.8), (697, 0.6), (699, 0), (dur, 0)])
-    for ch in range(2): out[:, ch] += (np.sin(TAU * 50 * t + ch) * 0.010 + np.sin(TAU * 100 * t) * 0.006 + np.sin(TAU * 150 * t) * 0.002 + lp(rs.randn(n), 140) * 0.012) * hum_
-    rumble = W([(0, 0), (107.4, 0), (108, 0.7), (114, 0.5), (115.5, 0), (434.6, 0), (435, 0.9), (446, 0.6), (448, 0), (463.4, 0), (464, 1.0), (470.5, 0.8), (472, 0), (555.4, 0), (556, 0.8), (559, 0.3), (561, 0), (697, 0), (697.6, 0.5), (700, 0.3), (701, 0), (dur, 0)])
+        ln = int((0.002 + rs.rand() ** 2 * 0.012) * SR); f0 = 500 + rs.rand() ** 2 * 1400
+        pop = lp(bp(np.concatenate([rs.randn(ln), np.zeros(600)]), f0, f0 * 1.8) * np.exp(-np.arange(ln + 600) / (ln * 0.6)), 2200)
+        at(pop, k, g * min(0.18, 0.05 + rs.pareto(2.5) * 0.04), rs.randn() * 0.15)
+    city = W([(0, 0), (587, 0), (588.5, 0.4), (643, 0.5), (645, 0.9), (659, 0.8), (660, 0), (675, 0), (676, 0.4), (690, 0.3), (691, 0), (dur, 0)])   # traffic, far off
+    for ch in range(2): out[:, ch] += (lp(rs.randn(n), 200) * 0.03 + bp(rs.randn(n), 250, 900) * 0.012 * slow_noise(n, 0.7, 75 + ch)) * city
+    mach = W([(0, 0), (488.8, 0), (489.6, 0.7), (493, 0.5), (494, 0), (589.6, 0), (590.4, 0.9), (594.2, 0.9), (594.5, 0), (596.4, 0), (597, 0.6), (604, 0.4), (605, 0), (dur, 0)])
+    for ch in range(2): out[:, ch] += (lp(rs.randn(n), 160) * 0.02 + np.sin(TAU * 55 * t + ch) * 0.006 + lp(rs.randn(n), 900) * 0.01 * (np.sin(TAU * 2.4 * t) > 0.6)) * mach
+    k = 590.4
+    while k < 604:                                                                    # the line: a press, a clunk, a ratchet
+        if not (594.2 < k < 596.6): at(clank(0.04, 220 + rs.rand() * 60), k, 1, rs.rand() - 0.5); at(thud(0.05, 90), k + 0.37, 1, 0.2)
+        k += 0.75
+    rumble = W([(0, 0), (246.8, 0), (247.4, 0.4), (250.4, 0.8), (256, 0.6), (258, 0), (465.6, 0), (466.4, 0.6), (475, 0.4), (476.4, 0), (535, 0), (535.6, 0.5), (546, 0.6), (548.1, 0.6), (548.2, 0), (548.6, 0), (549.4, 0.9), (553, 0.3), (556, 0), (755.4, 0), (756, 1.0), (760, 0.6), (764, 0), (804.6, 0), (805, 0.9), (807.5, 0), (dur, 0)])
     for ch in range(2): out[:, ch] += lp(rs.randn(n), 120) * 0.05 * rumble * (0.6 + 0.4 * slow_noise(n, 1.2, 80 + ch))
-    leaves = W([(0, 0), (29, 0), (31, 0.4), (36, 0.3), (40, 0), (706.5, 0), (708, 0.8), (716, 0.5), (719, 0), (dur, 0)])
-    for ch in range(2): out[:, ch] += bp(rs.randn(n), 500, 1900) * (0.3 + 0.7 * slow_noise(n, 1.5, 90 + ch) ** 2) * 0.03 * leaves
+    leaves = W([(0, 0), (155.6, 0), (157, 0.5), (168, 0.4), (169, 0), (349.6, 0), (350.4, 0.4), (357.6, 0.3), (358.4, 0), (dur, 0)])   # Ise's cedars, the maple wind
+    for ch in range(2): out[:, ch] += bp(rs.randn(n), 400, 1600) * (0.3 + 0.7 * slow_noise(n, 1.5, 90 + ch) ** 2) * 0.03 * leaves
+    planes = W([(0, 0), (528.2, 0), (529, 0.6), (533, 0.3), (534.4, 0), (535, 0.6), (538, 1.0), (546, 0.6), (547.6, 0), (dur, 0)])   # bombers: a low drone of engines, far up
+    for ch in range(2): out[:, ch] += lp(np.sin(TAU * 92 * t + ch) * (1 + 0.3 * np.sin(TAU * 3.1 * t)) + 0.6 * np.sin(TAU * 97.5 * t) + lp(rs.randn(n), 300) * 0.8, 500) * 0.012 * planes
     # --- events, in order
-    for i, tm in enumerate([5.0, 7.5, 9.0]): at(swish(0.4, 300, 1200) * 0.03, tm, 1, -0.2)
-    m = int(0.9 * SR); at(bp(rs.randn(m), 400, 1500) * np.sin(np.linspace(0, np.pi, m)) * 0.03, EV['flute'] - 0.6, 1, 0.15)   # a breath before the flute
-    for i in range(6): at(swish(0.35, 300, 1000) * 0.03, 29.4 + i * 0.7, 1, -0.3)                       # hoes in the millet
-    for i in range(5): at(lp(rs.randn(int(0.4 * SR)), 700) * np.exp(-np.arange(int(0.4 * SR)) / (0.1 * SR)) * 0.04, 32.6 + i * 0.6, 1, 0.3)  # feet in the paddy
-    m, tv = tvec(3.0); at(lp(rs.randn(m), 400) * env_ar(m, 0.3, 1.5) * 0.08 + bp(rs.randn(m), 600, 2000) * env_ar(m, 0.2, 1.5) * 0.02 * (0.5 + 0.5 * slow_noise(m, 12, 3)), EV['pour'], 1, 0.1)  # bronze poured
-    at(lp(rs.randn(int(1.4 * SR)), 1800) * np.exp(-np.arange(int(1.4 * SR)) / (0.35 * SR)) * 0.04, EV['pour'] + 2.6, 1, 0.1)     # the hiss as it meets the mould
-    at(clank(0.1, 220), EV['vessels'] - 0.1, 1, 0.2)
-    m, tv = tvec(2.0); at(bp(rs.randn(m), 300, 1500) * np.exp(-tv / 0.6) * 0.02, EV['rod'], 1, 0)                  # the hot rod on the bone
-    for tc in EV['cracks']: at(crackle(0.12), tc, 1, rs.rand() * 0.4 - 0.2)
-    for tc in EV['carve']: at(tok(0.4, 420), tc, 1, 0.1); at(swish(0.18, 600, 1800) * 0.04, tc + 0.05, 1, 0.1)
-    for tm in EV['signs']: at(tok(0.2, 300), tm - 0.02, 1, 0)
-    gallop(EV['war'] + 0.4, EV['war'] + 5.5, 0.06, 0.3); gallop(EV['war'] + 1.5, EV['war'] + 6.0, 0.05, -0.4, 0.38)
-    for k in range(5): at(clank(0.06, 400 + rs.rand() * 200), EV['war'] + 0.8 + k * 1.1 + rs.rand() * 0.4, 1, rs.rand() - 0.5)
-    for i, tc in enumerate(EV['conquer']): at(thud(0.12, 60), tc + 0.05, 1, -0.4 + i * 0.16)
-    for ts in EV['std']: at(thud(0.1, 90), ts, 1, 0.2)
-    for k in range(9): at(thud(0.07, 70 + rs.rand() * 30), EV['wall'] + 0.4 + k * 0.62 + rs.rand() * 0.2, 1, rs.rand() - 0.5)
-    steps(EV['army'], EV['army'] + 8, 0.75, 0.05, -0.2)
-    for k in range(3): at(lp(swish(0.6, 200, 900), 1200) * 0.06, EV['found'] - 0.8 + k * 0.9, 1, 0.2)   # spades in the soil
-    for i in range(10):
-        m, tv = tvec(0.6); f = 480 + rs.rand() * 120
-        clonk = (np.sin(TAU * f * tv) + 0.35 * np.sin(TAU * f * 2.3 * tv) * np.exp(-tv / 0.04)) * np.exp(-tv / 0.16) * np.minimum(1, tv / 0.004)
-        at(lp(clonk, 1500) * 0.02, EV['road'] - 1.5 + i * 1.3 + rs.rand() * 0.4, 1, 0.3)                # camel bells
-    gallop(EV['silkW'] + 0.6, EV['silkW'] + 3.5, 0.04, -0.3, 0.5)
-    for i in range(5): at(lp(rs.randn(int(0.5 * SR)), 900) * np.sin(np.linspace(0, np.pi, int(0.5 * SR))) * 0.05, EV['paper'] + 0.4 + i * 0.5, 1, 0)  # pulp stirred in the vat
-    at(flutter(1.1) * 0.05, EV['sheet'], 1, 0.1); at(flutter(1.6) * 0.07, EV['rustle'] - 0.3, 1, 0)
-    m, tv = tvec(2.5); at(lp(rs.randn(m), 110) * env_ar(m, 0.1, 1.6) * 0.25, EV['quake'] - 0.4, 1, 0)
-    at(clink(700, 0.12), EV['quake'] + 0.5, 1, 0.2)
-    for i in range(5): at(swish(0.5, 300, 1200) * 0.03, EV['canal'] + 1 + i * 1.1, 1, -0.3)            # oars on the canal
-    for i in range(8): at(swish(0.3, 500, 1800) * 0.035, EV['exam'] + 0.6 + i * 0.55 + rs.rand() * 0.2, 1, 0.2)   # brushes on paper
-    for i in range(6): at(clink(1100 + rs.rand() * 400, 0.03), EV['changan'] + 1 + i * 1.4 + rs.rand(), 1, rs.rand() - 0.5)
-    at(boom(0.2), EV['bang'], 1, 0.1); at(lp(rs.randn(int(1.5 * SR)), 1600) * np.exp(-np.arange(int(1.5 * SR)) / (0.5 * SR)) * 0.04, EV['bang'] + 0.05, 1, 0.1)
-    for i, tf in enumerate([332.4, 333.3, 334.1, 334.9, 335.9, 336.8, 337.6]):
-        at(whoosh(0.9, 200, 900) * 0.04, tf - 0.9, 1, 0.3 - i * 0.05)
-        at(boom(0.06), tf, 1, -0.4 + i * 0.13)
-        for j in range(10): at(crackle(0.03), tf + 0.25 + j * 0.09 + rs.rand() * 0.08, 1, -0.4 + i * 0.13 + rs.randn() * 0.2)
-    at(flutter(0.8) * 0.04, EV['money'], 1, 0.2); at(flutter(0.8) * 0.04, EV['money'] + 0.6, 1, 0.3)
-    for i in range(12): at(tok(0.25, 520), EV['type'] + 0.5 + i * 0.22 + rs.rand() * 0.05, 1, 0.1)        # type set in a tray
-    for i in range(10): at(flutter(0.35) * 0.03, EV['pages'] + i * 0.14, 1, rs.rand() - 0.3)
-    gallop(EV['mongols'] + 0.2, EV['mongols'] + 8.4, 0.08, 0.0, 0.36); gallop(EV['mongols'] + 1, EV['mongols'] + 8, 0.06, -0.5, 0.33)
-    for k in range(6): at(thud(0.07, 80), EV['mingwall'] + 0.3 + k * 0.6, 1, rs.rand() - 0.5)
+    # 1. the fire, the pots, the cord
+    at(whoosh(1.4, 120, 700) * 0.06, 0.1, 1, 0); at(whoosh(1.0, 140, 800) * 0.08, E['fired'] - 0.3, 1, 0)
+    at(thud(0.08, 90), E['pot1'] - 0.1, 1, 0.1)
+    m, tv = tvec(6.0); at(lp(rs.randn(m), 600) * (0.5 + 0.5 * np.sin(TAU * 1.3 * tv) ** 2) * env_ar(m, 0.5, 1.0) * 0.02, E['cordmark'] + 0.6, 1, 0)   # cord rolled on wet clay
+    gallop(E['deerRun'], E['deerRun'] + 2.6, 0.035, 0.3, 0.32)
+    for i in range(4): at(tok(0.2, 380), E['chestnut'] + 0.3 + i * 0.35, 1, -0.2)
+    # 2. bronze and iron, moats, towers, the seal
+    at(clank(0.07, 300), E['iron'] + 0.1, 1, 0.2); at(clank(0.05, 340), E['iron'] + 0.7, 1, 0.2)
+    for i in range(5): at(lp(swish(0.5, 200, 900), 1100) * 0.05, E['moat'] + i * 0.55, 1, -0.3)   # spades
+    for i in range(6): at(tok(0.35, 260), E['towers'] - 0.2 + i * 0.3, 1, 0.3)
+    at(thud(0.1, 70), E['seal'] + 0.05, 1, 0)
+    for i in range(8): at(clink(700 + i * 30, 0.02), E['mirrors'] + 0.2 + i * 0.2, 1, 0.4 - i * 0.1)
+    # 3. haniwa set down on the mound
+    for k_ in ['hClay', 'hHouse', 'hHorse', 'hWarrior', 'hDancers']: at(tok(0.4, 300), E[k_], 1, 0); at(thud(0.04, 120), E[k_] + 0.02, 1, 0)
+    # 4. carpenters, the relay, Ise
+    for i in range(8): at(tok(0.35, 330 + rs.rand() * 60), E['carpenters'] + 0.2 + i * 0.4, 1, 0.3)
+    at(swish(0.8, 400, 1500) * 0.04, E['letter'] + 0.4, 1, 0.1); at(swish(0.6, 400, 1500) * 0.035, E['letter'] + 1.4, 1, 0.1)
+    k = E['firm']
+    while k < E['ise'] - 1.0: at(tok(0.3, 300 + rs.rand() * 80), k, 1, 0.2 * np.sin(k)); k += 0.75
+    for i in range(6): at(tok(0.3, 360), E['iserebuilt'] - 0.4 + i * 0.32, 1, 0.2)
+    # 5. bronze poured for the Buddha; the crowd at the cords
+    m, tv = tvec(3.0); at(lp(rs.randn(m), 400) * env_ar(m, 0.3, 1.5) * 0.08 + bp(rs.randn(m), 600, 2000) * env_ar(m, 0.2, 1.5) * 0.02 * (0.5 + 0.5 * slow_noise(m, 12, 3)), E['bronzeall'], 1, 0.1)
+    at(lp(rs.randn(int(1.4 * SR)), 1600) * np.exp(-np.arange(int(1.4 * SR)) / (0.35 * SR)) * 0.035, E['bronzeall'] + 2.6, 1, 0.1)
+    # 6. brushes, a lifted roof
+    for i in range(10): at(swish(0.3, 500, 1700) * 0.03, E['kana'] + i * 0.4 + rs.rand() * 0.15, 1, 0.2)
+    for i in range(6): at(swish(0.3, 500, 1700) * 0.025, E['murasaki'] + 1.0 + i * 0.7, 1, -0.1)
+    for i in range(3):
+        m, tv = tvec(0.7); f = 150 + rs.rand() * 80; y = np.sin(TAU * np.cumsum(f * (1 + 0.3 * tv)) / SR) * (np.sin(TAU * 28 * tv) > 0.2) * np.sin(np.pi * tv / tv[-1])
+        at(bp(y, 120, 1200) * 0.018, E['roofs'] + 0.2 + i * 0.6, 1, 0)                 # the roof's timbers, creaking up
+    # 7. riders, the Mongol fleet, the forge, the plunge
+    gallop(E['samurai'] + 0.3, E['samurai'] + 3.0, 0.05, 0.3, 0.4)
     for i in range(8):
         m, tv = tvec(0.7); f = 180 + rs.rand() * 120; y = np.sin(TAU * np.cumsum(f * (1 + 0.3 * tv)) / SR) * (np.sin(TAU * 30 * tv) > 0.2) * np.sin(np.pi * tv / tv[-1])
-        at(bp(y, 150, 1500) * 0.02, EV['zhenghe'] + 0.6 + i * 1.2 + rs.rand(), 1, 0.2)                # timbers creaking
-    for i in range(3): at(flutter(1.2) * 0.04, EV['zhenghe'] + 1.5 + i * 2.6, 1, -0.2)               # sails
-    gallop(EV['manchu'] + 0.2, EV['manchu'] + 4.0, 0.06, 0.3, 0.4)
-    for i in range(6): at(clink(1000 + rs.rand() * 500, 0.03), EV['trade'] + 0.8 + i * 0.8, 1, rs.rand() - 0.5)   # porcelain and silver
-    for i in range(5): at(boom(0.10), EV['opiumWar'] + 0.3 + i * 0.9 + rs.rand() * 0.3, 1, rs.rand() * 1.4 - 0.7)  # cannon
-    for k in range(6): at(boom(0.06), EV['taiping'] + 0.5 + k * 1.1 + rs.rand() * 0.5, 1, rs.rand() * 1.6 - 0.8)
-    for k in range(10): at(boom(0.07), EV['japan'] + 0.6 + rs.rand() * 6.5, 1, rs.rand() * 1.6 - 0.8)
-    m, tv = tvec(7.0); at(lp(np.sin(TAU * 95 * tv) * (1 + 0.3 * np.sin(TAU * 3.1 * tv)) + 0.5 * np.sin(TAU * 101 * tv), 400) * env_ar(m, 2.0, 3.0) * 0.012, EV['japan'] + 0.4, 1, -0.5)  # aircraft, far off
-    for k in range(10): at(clank(0.07, 300 + rs.rand() * 300), EV['leap'] + 0.3 + k * 0.38 + rs.rand() * 0.1, 1, rs.rand() - 0.5)   # backyard furnaces
-    for k in range(6):
-        m, tv = tvec(0.5); at(lp(sum(bp(rs.randn(m), 300 + 100 * v, 900 + 200 * v) for v in range(3)) * np.sin(np.pi * tv / tv[-1]), 1200) * 0.03, EV['cultural'] + 0.3 + k * 0.78, 1, rs.rand() - 0.5)  # chanting crowds
-    for i in range(4): at(clink(1300, 0.025), EV['tu'] + 1.5 + i * 0.9, 1, 0.3)                        # glassware
-    m, tv = tvec(2.0); at(whoosh(2.0, 90, 400) * 0.10, EV['open'] - 0.2, 1, -0.4)                     # a ship's horn would be too sharp: just the swell of the hull
-    for k in range(12): at(clank(0.05, 260 + rs.rand() * 200), EV['open'] + 1 + k * 0.5 + rs.rand() * 0.2, 1, rs.rand() - 0.5)   # containers landing
-    for k in range(20): at(tok(0.25, 200 + rs.rand() * 150), EV['shenzhen'] + 0.3 + k * 0.42, 1, rs.rand() * 1.4 - 0.7)       # hammering
-    m, tv = tvec(3.4); at(lp(rs.randn(m), 140) * (0.6 + 0.4 * np.sin(TAU * 9 * tv)) * env_ar(m, 0.4, 1.0) * 0.1, EV['tanks'] - 0.4, 1, 0.3)   # treads
-    for i in range(12): at(lp(rs.randn(int(0.04 * SR)), 1500) * np.exp(-np.arange(int(0.04 * SR)) / (0.005 * SR)) * 0.04, EV['spark'] + 0.3 + i * 0.32, 1, rs.rand() - 0.5)  # switches
-    for k, tt in enumerate([582.0, 585.6, 589.2]): at(whoosh(2.4, 140, 1000) * 0.16, tt, 1, -0.6 + k * 0.6)   # trains passing
-    m, tv = tvec(5.0); at(lp(rs.randn(m), 160) * env_ar(m, 0.5, 2.4) * 0.22 + bp(rs.randn(m), 300, 1400) * env_ar(m, 0.3, 2.0) * 0.03, EV['launch'], 1, 0.2)   # the launch
-    m, tv = tvec(0.5); at((np.sin(TAU * 70 * tv) * np.exp(-tv / 0.12) + lp(rs.randn(m), 300) * np.exp(-tv / 0.08) * 0.5) * 0.10, EV['farside'] + 1.2, 1, 0.1)   # touchdown, far away
-    at(servo(1.2, 200, 260) * 0.04, EV['change6'] + 0.5, 1, 0.2); at(lp(swish(0.5, 200, 800), 900) * 0.05, EV['change6'] + 2.0, 1, 0.2)   # the scoop
-    m, tv = tvec(6.0); at(lp(rs.randn(m), 300) * env_ar(m, 0.4, 2.0) * 0.10, EV['gorges'] - 0.2, 1, 0)   # spillways open
-    for k in range(4): at(whoosh(1.5, 100, 600) * 0.08, EV['hzmb'] + 1 + k * 2.1, 1, -0.6 + k * 0.4)   # traffic over the sea
-    m, tv = tvec(4.0); at(lp(rs.randn(m), 180) * env_ar(m, 0.8, 1.5) * 0.10, EV['hzmb'] + 4.0, 1, 0)    # into the tunnel
-    for k in range(3): at(whoosh(1.6, 110, 700) * 0.07, EV['huajiang'] + 1.2 + k * 2.2, 1, -0.5 + k * 0.5)
-    m, tv = tvec(3.0); at(lp(rs.randn(m), 600) * env_ar(m, 1.2, 1.2) * 0.07 + lp(np.sin(TAU * np.cumsum(np.linspace(60, 140, m)) / SR), 400) * env_ar(m, 1.5, 1.0) * 0.05, EV['plasma'] - 1.0, 1, 0)  # plasma lights
-    for k in range(10): at(tok(0.12, 700), EV['seventeen'] + 0.1 + k * 0.6, 1, 0.3)                      # the clock
-    for k in range(10): at(servo(0.4, 260 + rs.rand() * 120, 360 + rs.rand() * 200) * 0.05, EV['robots'] + 0.3 + k * 0.55 + rs.rand() * 0.1, 1, rs.rand() - 0.5)   # robots dancing
-    for k in range(40): at(lp(bp(rs.randn(int(0.05 * SR)), 600, 2000) * np.exp(-np.arange(int(0.05 * SR)) / (0.01 * SR)), 2200) * 0.04, EV['robots'] - 0.6 + rs.rand() * 3.0, 1, rs.rand() * 1.6 - 0.8)  # applause
-    steps(EV['marathon'], EV['marathon'] + 4, 0.32, 0.05, 0.2)
-    fac = W([(0, 0), (682, 0), (683, 1), (696, 0.8), (698, 0), (dur, 0)])
-    for ch in range(2): out[:, ch] += (lp(rs.randn(n), 160) * 0.02 + np.sin(TAU * 55 * t + ch) * 0.006) * fac
-    for k in range(18):
-        tw = 683.6 + k * 0.72
-        at(servo(0.45, 300, 440 + rs.rand() * 80) * 0.06, tw, 1, -0.5 + (k % 3) * 0.5)
-        if k % 2 == 0:
-            m, tv = tvec(0.5); at(lp(bp(rs.randn(m), 600, 2200) * (rs.rand(m) > 0.6) * np.sin(np.pi * tv / tv[-1]), 2000) * 0.025, tw + 0.45, 1, -0.5 + (k % 3) * 0.5)   # welding
-    for k in range(5): at(lp(swish(0.6, 400, 1400), 1500) * 0.05, 684 + k * 2.4, 1, 0.3)                # pneumatics
-    m, tv = tvec(4.0); at(lp(rs.randn(m), 900) * env_ar(m, 0.5, 1.5) * 0.02, EV['coal'] + 0.4, 1, 0.3)    # steam
-    for k in range(6): at(whoosh(1.8, 120, 500) * 0.05, EV['solar'] + 0.5 + k * 1.2, 1, -0.6 + k * 0.2)  # turbine blades
-    at(whoosh(4.0, 100, 700) * 0.10, EV['pull'] - 0.2, 1, 0)                                              # lifting away from the ground
-    # village loudspeakers: a muffled broadcast, a voice-like murmur with syllables but no words, tinny and far
-    def broadcast(t0, dur, g, pan):
-        m, tv = tvec(dur); syl = (0.5 + 0.5 * np.sin(TAU * 5.2 * tv + 3 * np.sin(TAU * 0.7 * tv))) ** 2 * (slow_noise(m, 3, rs.randint(1e6)) > 0.3)
-        y = bp(rs.randn(m), 450, 1700) * syl + bp(np.sin(TAU * np.cumsum(170 * (1 + 0.15 * np.sin(TAU * 1.3 * tv))) / SR), 400, 1800) * syl * 0.6
-        y = lp(y + bp(y, 850, 1000) * 2.0, 1900)
-        at(y * env_ar(m, 0.3, 0.6) * g, t0, 1, pan)
-    broadcast(483.2, 6.4, 0.020, -0.5)
-    broadcast(EV['cultural'] + 0.1, 8.6, 0.032, 0.3)
-    # the drone swarm rising over the river front: a soft rush of air, then a low hum while the dragon flies
-    at(whoosh(2.6, 90, 500) * 0.06, EV['today'] - 0.2, 1, 0)
-    m, tv = tvec(6.2); at(lp(np.sin(TAU * 110 * tv) * 0.3 + np.sin(TAU * 165 * tv) * 0.15 + lp(rs.randn(m), 400) * 0.6, 600) * env_ar(m, 1.2, 1.6) * 0.03, EV['today'] + 0.4, 1, 0)
-    # the rail map dropping in on its thread; confetti over the gala
-    at(flutter(1.0) * 0.05, EV['hsr'] + 1.6, 1, 0.4)
-    for i in range(14): at(flutter(0.4) * 0.025, EV['robots'] + 0.2 + i * 0.35 + rs.rand() * 0.2, 1, rs.rand() - 0.5)
-    # the factory's lamps going off, one by one
-    for i in range(8): at(thud(0.07, 85), 690.4 + i * 0.22, 1, -0.5 + i * 0.14); at(clank(0.025, 170), 690.4 + i * 0.22, 1, -0.5 + i * 0.14)
-    # the rocket's cloud rolling out over the pad
-    m, tv = tvec(4.5); at(lp(rs.randn(m), 260) * env_ar(m, 0.3, 2.5) * 0.08, EV['launch'] + 0.4, 1, 0.1)
+        at(bp(y, 150, 1500) * 0.02, E['mongols'] + 0.6 + i * 1.2 + rs.rand(), 1, 0.2)
+    at(whoosh(3.0, 100, 700) * 0.14, E['kamikaze'] - 0.6, 1, -0.3)
+    tt = E['folding']
+    for i, d in enumerate([0.6] * 4 + [0.3] * 8 + [0.15] * 16): at(clank(0.05 + 0.02 * (i % 2 == 0), 300 + rs.rand() * 40), tt, 1, 0.2); tt += d
+    for i in range(14): at(crackle(0.05), E['folding'] + 0.5 + rs.rand() * 4.5, 1, 0.2 + rs.randn() * 0.2)
+    m, tv = tvec(2.6); at(lp(rs.randn(m), 1400) * np.exp(-tv / 0.6) * 0.07 + lp(rs.randn(m), 300) * np.exp(-tv / 0.3) * 0.05, E['plunge'], 1, 0.1)   # the quench: a hiss of steam
+    # 8. a pond, a Zen rake, a tea bowl, staples
+    for i in range(4): at(lp(swish(1.2, 250, 1000), 1100) * 0.045, E['raked'] + 0.4 + i * 1.3, 1, -0.2)
+    at(thud(0.05, 140), E['bowl'] + 0.2, 1, 0.1)
+    for i in range(3): at(clank(0.04, 380), E['staples'] + i * 0.4, 1, 0.1)
+    at(swish(1.0, 300, 1200) * 0.03, E['gold'] + 0.3, 1, 0)
+    # 9. ships, guns, smiths, the tea room, the sword, armies in fog
+    for i in range(4): at(flutter(1.2) * 0.04, E['portuguese'] + 0.5 + i * 1.2, 1, 0.4)
+    for i in range(3): at(boom(0.07), E['guns'] + 0.4 + i * 0.9, 1, 0.3 - i * 0.2); at(lp(rs.randn(int(0.8 * SR)), 900) * np.exp(-np.arange(int(0.8 * SR)) / (0.25 * SR)) * 0.03, E['guns'] + 0.42 + i * 0.9, 1, 0.3)
+    for i in range(8): at(clank(0.05, 340 + rs.rand() * 60), E['ownguns'] + 0.3 + i * 0.45, 1, -0.2)
+    m, tv = tvec(1.0); at(lp(bp(rs.randn(m), 200, 900) * np.sin(np.pi * tv / tv[-1]), 1000) * 0.05, E['door'] + 0.1, 1, 0.1)   # a sliding door
+    at(tok(0.4, 240), E['sword'] + 0.3, 1, 0.1); at(lp(swish(0.4, 200, 800), 900) * 0.04, E['sword'] + 0.32, 1, 0.1)
+    m, tv = tvec(4.0); at(lp(rs.randn(m), 900) * (0.4 + 0.6 * slow_noise(m, 6, 5)) * env_ar(m, 1.0, 1.5) * 0.02, E['rikyu'] + 1.0, 1, -0.2)   # the kettle, singing low
+    steps(E['fog'] + 0.4, E['decided'] - 0.6, 0.5, 0.04, -0.2); gallop(E['ieyasu'], E['ieyasu'] + 2.4, 0.04, 0.3, 0.42)
+    for i in range(6): at(clank(0.025, 260 + rs.rand() * 100), E['fog'] + 0.8 + i * 0.8 + rs.rand() * 0.3, 1, rs.rand() - 0.5)
+    # 10. gates, Edo, sushi, kabuki, fireworks, the frog, the print shop, the wave
+    at(thud(0.14, 60), E['closed'] + 0.1, 1, -0.2); at(thud(0.12, 64), E['closed'] + 0.5, 1, 0.2)
+    for i in range(3): at(flutter(1.1) * 0.035, E['dutch'] + i * 1.0, 1, 0.4)
+    steps(E['edo'] + 0.2, E['kabuki'] - 0.6, 0.38, 0.035, 0.0)                         # geta on the bridge
+    for i in range(6): at(tok(0.25, 420), E['sushi'] + 0.3 + i * 0.32, 1, 0.3)          # a knife on the board
+    for i, tf in enumerate([419.8, 420.6, 421.3, 422.0, 422.9, 423.6]):
+        at(whoosh(0.8, 200, 800) * 0.035, tf - 0.8, 1, -0.4 + i * 0.16); at(boom(0.08), tf + 0.15, 1, -0.4 + i * 0.16)
+        for j in range(8): at(crackle(0.025), tf + 0.4 + j * 0.1 + rs.rand() * 0.08, 1, -0.4 + i * 0.16 + rs.randn() * 0.2)
+    m, tv = tvec(0.9); f = 260 * np.exp(-tv / 0.15) + 110                               # the frog jumps in
+    at(lp(np.sin(TAU * np.cumsum(f) / SR) * np.exp(-tv / 0.18) * 0.6 + lp(rs.randn(m), 900) * np.exp(-tv / 0.06) * 0.4, 1200) * 0.10, E['frog'] + 0.7, 1, 0.1)
+    for i in range(3): m, tv = tvec(0.5); at(lp(rs.randn(m), 700) * np.exp(-tv / 0.12) * 0.012, E['frog'] + 1.1 + i * 0.45, 1, 0.1)
+    for i in range(10): at(lp(swish(0.25, 600, 1700), 1800) * 0.035, E['carve'] + 0.2 + i * 0.3 + rs.rand() * 0.1, 1, 0.2)   # gouges in cherry wood
+    for i in range(4): at(lp(swish(0.9, 250, 1000), 1100) * 0.05, E['colour'] + i * 0.8, 1, -0.1)   # the baren, rubbing
+    m, tv = tvec(4.0); at(lp(rs.randn(m), 700) * env_ar(m, 1.2, 2.0) * 0.12 + lp(rs.randn(m), 200) * env_ar(m, 1.5, 2.0) * 0.08, E['wave'] - 0.8, 1, 0.1)   # the wave rises and breaks
+    # 11. black ships, cannon, a rickshaw, a train, the battle at Tsushima
+    m, tv = tvec(10.0); at(lp(rs.randn(m), 160) * (0.6 + 0.4 * (np.sin(TAU * 2.2 * tv) > 0)) * env_ar(m, 2.0, 2.0) * 0.08, E['blackhulled'], 1, 0.3)   # engines
+    for i in range(4): at(boom(0.10), E['salute'] + i * 1.1, 1, 0.3 - i * 0.1)
+    at(flutter(1.4) * 0.05, E['shogunfell'] + 0.2, 1, -0.2)
+    m, tv = tvec(3.0); at(lp(rs.randn(m), 600) * (0.5 + 0.5 * np.sin(TAU * 7 * tv) ** 2) * env_ar(m, 0.4, 1.0) * 0.025, E['raced'] + 0.2, 1, -0.3)   # rickshaw wheels
+    steps(E['raced'] + 0.2, E['raced'] + 3.0, 0.24, 0.04, -0.3)
+    m, tv = tvec(0.25); at(lp(swish(0.25, 400, 1500), 1600) * 0.05, E['topknots'] + 0.5, 1, 0.1)   # snip
+    k = E['railways']
+    for i in range(12): at(lp(rs.randn(int(0.25 * SR)), 500) * np.exp(-np.arange(int(0.25 * SR)) / (0.06 * SR)) * 0.06, k + i * 0.42, 1, -0.4 + i * 0.05)   # a steam engine, chuffing
+    for i in range(8): at(boom(0.08), E['russia'] + 0.6 + i * 0.7 + rs.rand() * 0.3, 1, rs.rand() * 1.4 - 0.7)
+    # 12. war (restrained)
+    for k_ in range(8): at(boom(0.05), E['invaded'] + 0.5 + rs.rand() * 8.0, 1, rs.rand() * 1.6 - 0.8)
+    for k_ in range(4): at(whoosh(1.4, 120, 600) * 0.06, E['pearlharbor'] + k_ * 0.6, 1, -0.6 + k_ * 0.4); at(boom(0.09), E['pearlharbor'] + 1.2 + k_ * 0.6, 1, -0.6 + k_ * 0.4)
+    for k_ in range(10): at(boom(0.05), E['onenight'] + 0.5 + rs.rand() * 8, 1, rs.rand() * 1.6 - 0.8)
+    for i in range(10): at(flutter(0.5) * 0.03, E['sadako'] + 0.6 + i * 0.5, 1, 0.1)          # paper folded
+    for i in range(6): at(flutter(0.9) * 0.025, E['cranes'] + 0.4 + i * 0.5, 1, -0.4 + i * 0.16)
+    # 13. rebuilding, the line, the train, the Olympics, the bubble
+    for i in range(16): at(tok(0.3, 280 + rs.rand() * 120), E['rebuilt'] + 0.2 + i * 0.36 + rs.rand() * 0.1, 1, rs.rand() - 0.5)
+    m, tv = tvec(0.6); at(lp(rs.randn(m), 600) * np.exp(-tv / 0.1) * 0.04, E['cord'] - 0.1, 1, 0.2)   # the cord pulled
+    at(lp(swish(0.5, 200, 900), 1000) * 0.05, E['olympics'] + 0.2, 1, 0)
+    at(whoosh(3.0, 110, 900) * 0.20, E['shinkansen'] + 0.8, 1, -0.5); at(whoosh(2.4, 120, 800) * 0.12, E['billions'] + 1.0, 1, 0.5)
+    for i in range(10): at(lp(rs.randn(int(0.08 * SR)), 700) * np.exp(-np.arange(int(0.08 * SR)) / (0.02 * SR)) * 0.04, E['shinkansen'] + 0.4 + i * 0.18, 1, -0.5)   # rail joints
+    m, tv = tvec(0.4); at(lp(rs.randn(m), 500) * np.exp(-tv / 0.04) * 0.12, E['burst'] + 0.02, 1, 0)   # pop
+    at(whoosh(2.0, 90, 400) * 0.08, E['burst'] + 0.2, 1, 0)
+    # 14. a pen, a commuter train, pages, frames, a crossing, cards
+    for i in range(10): at(lp(swish(0.35, 300, 1200), 1300) * 0.025, E['tezuka'] - 3.0 + i * 0.5 + rs.rand() * 0.2, 1, 0.1)
+    k = E['everyone'] - 2.0
+    while k < E['sixmillion']:
+        for dt in (0, 0.14): at(lp(rs.randn(int(0.1 * SR)), 450) * np.exp(-np.arange(int(0.1 * SR)) / (0.025 * SR)) * 0.05, k + dt, 1, -0.2)   # the rails: clack-clack
+        k += 1.2
+    for i in range(6): at(thud(0.05, 110), E['sixmillion'] + 0.3 + i * 0.3, 1, 0.2)
+    for i in range(14): at(flutter(0.18) * 0.03, E['framebyframe'] + i * 0.19, 1, 0.1)    # a flip of drawings
+    for k_ in range(int((709.4 - 702.4) / 0.5)):                                        # the level crossing: kan, kan (kept low and soft)
+        m, tv = tvec(0.45); f = 660 if k_ % 2 else 620
+        at(lp(np.sin(TAU * f * tv) * np.exp(-tv / 0.18) + 0.25 * np.sin(TAU * f * 2.01 * tv) * np.exp(-tv / 0.06), 1200) * 0.016, 702.4 + k_ * 0.5, 1, 0.3)
+    k = 703.6
+    while k < 708.6:
+        for dt in (0, 0.12): at(lp(rs.randn(int(0.1 * SR)), 500) * np.exp(-np.arange(int(0.1 * SR)) / (0.025 * SR)) * 0.06, k + dt, 1, 0.2)
+        k += 0.55
+    at(whoosh(4.0, 110, 700) * 0.10, 704.0, 1, 0.3)
+    for i in range(5): at(tok(0.35, 340), E['nintendo'] + 0.4 + i * 0.45, 1, 0.2)          # flower cards slapped down
+    # 15. the inn's garden, knives, hammers, the sea, planting, a maglev, a capsule
+    for tt_ in (E['inn'] + 1.4, E['y705'] + 0.8):                                     # the shishi-odoshi: bamboo tipping onto stone
+        m, tv = tvec(0.5); at(lp(np.sin(TAU * 340 * tv) * np.exp(-tv / 0.06) + 0.5 * np.sin(TAU * 520 * tv) * np.exp(-tv / 0.03) + lp(rs.randn(m), 900) * np.exp(-tv / 0.005), 1400) * 0.08, tt_, 1, 0.3)
+    for i in range(8): at(tok(0.3, 400), E['sushichefs'] + 0.4 + i * 0.3, 1, 0.2)
+    for i in range(6): at(clank(0.05, 320), E['swordsmiths'] + 0.2 + i * 0.5, 1, -0.2)
+    for i in range(5): at(tok(0.3, 360), E['ise2013'] + 0.6 + i * 0.4, 1, 0.1)
+    m, tv = tvec(7.0); at(lp(rs.randn(m), 500) * env_ar(m, 1.5, 3.0) * 0.12, E['searose'] + 0.2, 1, 0.2)   # the surge
+    for i in range(4): at(lp(swish(0.6, 200, 800), 900) * 0.05, E['cherrytrees'] + i * 0.8, 1, -0.2)
+    at(whoosh(3.0, 120, 900) * 0.14, E['floats'] + 0.4, 1, -0.4)
+    at(whoosh(2.0, 100, 600) * 0.07, E['asteroids'] + 0.6, 1, 0.2); at(thud(0.05, 80), E['asteroids'] + 2.4, 1, 0.2)
+    # 16. the pull-back, the breaks, the mending
+    at(whoosh(4.0, 100, 700) * 0.10, E['pull'] - 0.2, 1, 0)
+    for k_ in ['broken', 'war', 'fire', 'quake', 'seaend']:                             # each crack opens
+        for j in range(6): at(crackle(0.05), E[k_] + j * 0.12 + rs.rand() * 0.05, 1, rs.randn() * 0.3)
+        at(thud(0.07, 60), E[k_], 1, 0)
+    at(boom(0.08), E['war'] + 0.05, 1, -0.3)
+    m, tv = tvec(2.4); at(lp(rs.randn(m), 110) * env_ar(m, 0.1, 1.5) * 0.2, E['quake'] - 0.1, 1, 0)
+    for i in range(5): at(lp(swish(1.4, 200, 800), 900) * 0.035, E['mended'] + i * 0.5, 1, -0.4 + i * 0.2)   # a brush laying gold
     return reverb(out, rt=0.9, wet=0.08, bright=4000, seed=9)
 
 
@@ -815,8 +1097,8 @@ def narration(spec, dur):
             place(out, y, t, 0.71, 0.0)
             gate[int(t * SR): int((t + d) * SR)] = 1
     room = reverb(out, rt=0.5, wet=0.05, bright=4000, seed=5)
-    # Li Bai's poem, read in a slightly larger, quieter room
-    poem = curve(n, [(0, 0), (302.8, 0), (303.4, 1), (312.6, 1), (313.2, 0), (dur, 0)])
+    # Bashō's poem, read in a slightly larger, quieter room
+    poem = curve(n, [(0, 0), (424.4, 0), (425.0, 1), (432.6, 1), (433.2, 0), (dur, 0)])
     room += reverb(out * poem[:, None], rt=1.4, wet=0.10, bright=3000, seed=6) - out * poem[:, None]
     return room, tl, gate
 

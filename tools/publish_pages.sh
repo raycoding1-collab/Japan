@@ -1,5 +1,5 @@
 #!/bin/sh
-# Publish the film to GitHub Pages: https://raycoding1-collab.github.io/China-/
+# Publish the film to GitHub Pages: https://raycoding1-collab.github.io/Japan/
 # Copies the website files onto the gh-pages branch and pushes it. Run from anywhere.
 set -e
 cd "$(dirname "$0")/.."
@@ -28,6 +28,6 @@ if git -C "$DIR" diff --cached --quiet; then echo "GitHub Pages already up to da
 git -C "$DIR" commit -q -m "Publish the film from $(git rev-parse --short HEAD)
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01TN6JeEYEUBaSW3APmrqVqW"
+Claude-Session: https://claude.ai/code/session_01TN6JeFixfZTEHgQWcX2nh9"
 git -C "$DIR" push -q -u origin gh-pages
-echo "Published to https://raycoding1-collab.github.io/China-/"
+echo "Published to https://raycoding1-collab.github.io/Japan/"
