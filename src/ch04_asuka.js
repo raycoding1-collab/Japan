@@ -103,7 +103,7 @@ RELAY.forEach(([a], i) => add('person', 'main', a, { v: 'rc' + i, z: 2, scale: P
 grassRun(400, 426, 3.6, 'main', { skip: (a) => a > 398 && a < 425.5 });
 
 // ---- Ise: the shrine rebuilt beside itself
-const T_ISE = ev('ise', 156.6), T_NEW = ev('rebuilt', 158.8), T_C7 = ev('seventh', 163.4), T_FORGET = ev('forgotten', 166.2);
+const T_ISE = ev('ise', 156.6), T_NEW = ev('iserebuilt', 158.8), T_C7 = ev('seventh', 163.4), T_FORGET = ev('forgotten', 166.2);
 add('torii', 'main', 428.4, { v: 0, z: 1, scale: 0.92, popAt: T_ISE - 0.6, loud: 1.4 });
 add('mizugaki', 'main', 430.8, { v: 0, z: 2.6, scale: 0.9 }); add('mizugaki', 'main', 436.8, { v: 0, z: 2.6, scale: 0.9 }); add('mizugaki', 'main', 443.0, { v: 1, z: 2.6, scale: 0.9, popAt: T_NEW + 0.2 });
 add('shinmei', 'main', 433.8, { v: 0, z: 0.6, scale: 0.9, foldAt: T_NEW + 2.6, loud: 1.6 });

@@ -31,14 +31,25 @@ Object.assign(LOOKS, {
 });
 // The tsunami: a dark wall of sea with a broken white crest. e.surge(t) carries it in (move) and its height.
 KINDS.tsunami = {
-  bake(mk) { const sh = mk('tsunami', [-340, -260, 320, 60]);
-    // a long dark swell, its front (to the left, landward) steepening and curling over
-    const top = []; for (let i = 0; i <= 20; i++) { const x = 320 - i * 26; top.push([x, -120 - Math.sin(i * 0.8) * 14 - i * 3]); }
-    const front = [[-200, -186], [-236, -206], [-276, -200], [-302, -170], [-300, -136], [-284, -120], [-300, -60], [-320, 0], [-330, 60]];
-    sh.piece([[320, 60], ...top, ...front], '#20344a', { round: 6, rough: 1.2, paint: (g) => { const gr = g.createLinearGradient(-200, -220, 0, 60); gr.addColorStop(0, '#4a6e88'); gr.addColorStop(0.5, '#2a4258'); gr.addColorStop(1, '#121c26'); g.fillStyle = gr; g.fillRect(-340, -260, 680, 330); g.strokeStyle = 'rgba(170,200,215,.3)'; g.lineWidth = 2; for (let k = 0; k < 9; k++) { g.beginPath(); g.moveTo(-290, -100 + k * 20); g.quadraticCurveTo(0, -150 + k * 22, 320, -100 + k * 18); g.stroke(); } } });
-    for (let i = 0; i < 14; i++) { const [x, y] = i < 10 ? top[20 - i * 2] : front[i - 10]; sh.piece([[x - 8, y + 10], [x - 12, y - 8], [x + 2, y - 20], [x + 16, y - 8], [x + 12, y + 12]], '#d8e2e8', { round: 5, lift: 1.2 }); }
+  bake(mk) { const sh = mk('tsunami', [-372, -262, 720, 340]), r = rng2();
+    // the long back of the swell rises out of the sea (right) to a crest, whose lip hangs over a steep face
+    const back = []; for (let i = 0; i <= 18; i++) { const u = i / 18, x = 340 - u * 510; back.push([x, 60 - 70 * u - 120 * u * u - Math.sin(u * 9) * 5]); }
+    const lip = [[-196, -150], [-226, -166], [-254, -158], [-270, -136], [-268, -112], [-252, -104]];
+    const face = [[-238, -96], [-236, -70], [-250, -36], [-284, 0], [-326, 36], [-366, 66]];
+    const body = [[340, 66], ...back, ...lip, ...face];
+    sh.piece(body, '#20344a', { round: 8, rough: 1, paint: (g) => { const gr = g.createLinearGradient(-120, -170, 60, 70); gr.addColorStop(0, '#56788e'); gr.addColorStop(0.45, '#2c465c'); gr.addColorStop(1, '#101a24'); g.fillStyle = gr; g.fillRect(-372, -262, 720, 340);
+      g.strokeStyle = 'rgba(180,206,218,.22)'; g.lineWidth = 2.2; for (let k = 0; k < 10; k++) { g.beginPath(); const y0 = -130 + k * 19; g.moveTo(-210 + k * 6, y0); g.bezierCurveTo(-60, y0 + 10 - k, 120, y0 + 56 - k * 3, 340, y0 + 120 - k * 6); g.stroke(); } } });
+    // the face, a little lighter, under the lip
+    sh.piece([[-232, -100], [-226, -64], [-240, -30], [-276, 4], [-318, 38], [-300, 46], [-256, 16], [-222, -22], [-210, -70], [-214, -104]], '#3a5a70', { round: 6, lift: 0.8 });
+    // foam: torn scraps, thick along the lip, falling down the face, a skirt of it spreading at the foot, and a few streaks on the back
+    const scrap = (x, y, s, col) => { const n = 6 + ((r() * 3) | 0), pts = []; for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2, rr = s * (0.55 + r() * 0.6); pts.push([x + Math.cos(a) * rr * 1.4, y + Math.sin(a) * rr]); } sh.piece(pts, col, { round: 3, rough: 1.4, lift: 0.6 }); };
+    const lipLine = [[-180, -152], [-200, -160], [-222, -168], [-244, -164], [-262, -148], [-270, -128], [-266, -112]];
+    lipLine.forEach(([x, y], i) => { scrap(x, y - 2, 10 + r() * 7, i % 2 ? '#dfe7ea' : '#c8d4d8'); scrap(x + 8 - r() * 16, y + 8, 6 + r() * 4, '#b4c4ca'); });
+    for (let i = 0; i < 9; i++) { const v = i / 8; scrap(-256 + v * 10 - r() * 18, -100 + v * 120 + r() * 10, 4 + r() * 5 * (1 - v * 0.5), r() < 0.5 ? '#c8d4d8' : '#a8bac2'); }
+    for (let i = 0; i < 12; i++) scrap(-360 + i * 22 + r() * 10, 50 - r() * 18 - (i > 6 ? (i - 6) * 4 : 0), 7 + r() * 8, i % 3 ? '#c4d0d4' : '#e2e9eb');
+    for (let i = 0; i < 6; i++) { const u = 0.2 + i * 0.12, [x, y] = back[Math.round(u * 18)]; scrap(x + r() * 20, y + 10 + r() * 16, 3 + r() * 3, 'rgba(190,210,218,.7)'); }
     return { spr: sh.finish({ shadowBlur: 6 }) }; },
-  draw(g, P, t, e, env) { const k = e.height ? e.height(t) : 1; if (k < 0.01) return; g.save(); g.translate(0, 60 * (1 - k)); g.scale(1, Math.max(0.05, k)); put(g, P.spr, env.sh * 0.5, 4, 5); g.restore(); },
+  draw(g, P, t, e, env) { const k = e.height ? e.height(t) : 1; if (k < 0.01) return; g.save(); g.translate(0, 66 * (1 - k)); g.scale(1, Math.max(0.05, k)); put(g, P.spr, env.sh * 0.5, 4, 5); g.restore(); },
 };
 function rng2() { let s = 77; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
 
@@ -85,14 +96,14 @@ add('person', 'main', 1955.4, { v: 'modernSmith', z: 1.4, scale: P2, flip: true,
 add('torii', 'main', 1958.8, { v: 0, z: 1, scale: 0.85, popAt: T_ISE2 - 0.6 });
 add('shinmei', 'main', 1962.4, { v: 0, z: 0.4, scale: 0.8, popAt: T_ISE2 - 0.4, foldAt: T_62 - 0.6 });
 add('shinmei', 'main', 1962.4, { v: 1, z: 0.45, scale: 0.8, popAt: T_62 - 0.4, loud: 1.6 });
-add('person', 'main', 1966, { v: 'iseCarp2', z: 2, scale: P2, flip: true, popAt: T_ISE2, act: (t) => ({ lean: 6, front: [-120 + Math.max(0, Math.sin(t * 4)) * 60, -10] }) });
+add('person', 'main', 1966, { v: 'iseCarp2', z: 2, scale: P2, flip: true, popAt: T_ISE2, foldAt: 752.6, act: (t) => ({ lean: 6, front: [-120 + Math.max(0, Math.sin(t * 4)) * 60, -10] }) });
 for (const a of [1956, 1968]) add('sugi', 'main', a, { v: 1, z: -0.5, scale: 0.8 });
 grassRun(1898, 1970, 4.4, 'main', { skip: (a) => a > 1900 && a < 1968 });
 
 // ---- 2011: the sea comes in
 const T_SEA = ev('searose', 756.4), T_FUK = ev('fukushima', 762.4);
 [[1972.6, 1], [1976.8, 0], [1980.6, 1], [1984.4, 2]].forEach(([a, v], i) => add('machiya', 'main', a, { v, z: 0.4, scale: 0.8, popAt: 750.8 + i * 0.1, foldAt: T_SEA + 1.6 - i * 0.4 }));
-add('tsunami', 'main', 1998, { z: 1.6, scale: 0.8, y: 6, from: T_SEA - 0.4, to: T_SEA + 6.2, move: (t) => -clamp((t - T_SEA + 0.2) * 9, 0, 20) + clamp((t - T_SEA - 3) * 6, 0, 18), height: (t) => sramp(t, T_SEA - 0.4, T_SEA + 0.6) * (1 - sramp(t, T_SEA + 3.4, T_SEA + 6)) });
+add('tsunami', 'main', 1998, { z: 1.6, scale: 0.8, y: 6, from: T_SEA - 0.4, to: T_SEA + 6.2, move: (t) => -clamp((t - T_SEA + 0.2) * 7, 0, 14) + clamp((t - T_SEA - 3) * 5, 0, 12), height: (t) => sramp(t, T_SEA - 0.4, T_SEA + 0.6) * (1 - sramp(t, T_SEA + 3.4, T_SEA + 6)) });
 add('npp', 'main', 1996.2, { z: 0.3, scale: 0.6, popAt: 751.4, y: 2 });
 for (let a = 1988; a < 2004; a += 3.4) add('wave', 'main', a, { v: (R() * 4) | 0, z: 0.4, scale: 0.8, y: -2 });
 // ---- the stone on the hill

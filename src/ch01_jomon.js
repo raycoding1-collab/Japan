@@ -144,8 +144,8 @@ hook({
     // They are among the oldest pots in the world: the pot itself, as it came out of the ground
     closeUp(st, g, t, ev('pot1', 15.0), ev('pot1Out', 20.3), (g2) => { put(g2, st.fx.firstpot, 0.6, 8, 12); }, { y: 0.47, yp: 0.44, scale: 0.92 });
     // Later potters rolled twisted cord across the wet clay: the cord rolls, and leaves the pattern behind it
-    closeUp(st, g, t, ev('cord', 20.8), ev('cordOut', 28.0), (g2) => {
-      const p = sramp(t, ev('cord', 20.8) + 0.6, ev('cord', 20.8) + 4.6), x = lerp(-150, 150, p);
+    closeUp(st, g, t, ev('cordmark', 20.8), ev('cordOut', 28.0), (g2) => {
+      const p = sramp(t, ev('cordmark', 20.8) + 0.6, ev('cordmark', 20.8) + 4.6), x = lerp(-150, 150, p);
       g2.save(); g2.rotate(-0.04); put(g2, st.fx.clay, 0.6, 8, 12);
       g2.save(); g2.beginPath(); g2.rect(-170, -70, x + 170, 140); g2.clip(); put(g2, st.fx.clayMarked, 0); g2.restore();
       g2.save(); g2.translate(x, -2); g2.scale(1, 1); put(g2, st.fx.cord, 0.5, 4, 6);
