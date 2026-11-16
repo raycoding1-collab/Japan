@@ -82,7 +82,7 @@ add('person', 'main', 596.2, { v: 'genjiLady', z: 0.35, scale: P2 * 0.9, y: 57, 
 add('kicho', 'main', 600.6, { z: 0.36, scale: 0.8, y: 57, popAt: 224.1 });
 add('person', 'main', 602.4, { v: 'genjiLady2', z: 0.32, scale: P2 * 0.9, y: 57, flip: true, popAt: 224.1, act: (t) => ({ head: -4 + Math.sin(t * 0.4) * 4 }) });
 add('person', 'main', 604.4, { v: 'genjiLady3', z: 0.34, scale: P2 * 0.9, y: 57, flip: true, popAt: 224.2, act: (t) => ({ head: 6, lean: 10 }) });
-add('shindenFront', 'main', 597.6, { v: 0, z: 0.1, scale: 0.98, popAt: 223.6, over: true, wide: 12, blinds: (t) => sramp(t, T_ROOF + 0.5, T_ROOF + 1.8), roof: (t) => sramp(t, T_ROOF, T_ROOF + 2.2), lamp: (t) => sramp(t, 224, 225) });
+add('shindenFront', 'main', 597.6, { v: 0, z: 0.1, scale: 0.98, popAt: 223.6, over: true, wide: 12, blinds: (t) => sramp(t, T_ROOF + 0.5, T_ROOF + 1.8), roof: (t) => sramp(t, T_ROOF, T_ROOF + 2.2) * (1 - sramp(t, T_IN + 1.0, T_IN + 2.4)), lamp: (t) => sramp(t, 224, 225) });
 for (const [a, v] of [[585, 0], [589, 2], [609, 1], [613, 0]]) add(v === 2 ? 'sakura' : 'momiji', 'main', a, { v: v === 2 ? 2 : v, z: 0.2, scale: 0.75 });
 grassRun(531, 616, 4.2, 'main', { skip: (a) => a > 533 && a < 559 || a > 562 && a < 571 || a > 586 && a < 611 });
 grassRun(500, 616, 7, 'front', { s: 2 });

@@ -32,11 +32,11 @@ SKY.push([46.6, ['#78a8d8', '#a8c8e0', '#e4ecdc', '#f4ecd0']], [61, PAL.DAY]);
 AMB.push([46.6, W_]); GRADE.push([46.6, [255, 220, 180, 0.08]]);
 ERAS.push(
   [46.8, 54.2, LOOK(['#78a8d8', '#a8c8e0', '#e4ecdc', '#f4ecd0'], [255, 252, 240], [235, 245, 220, 0.06], { motes: 0.4, mote: [240, 255, 230] })],   // a spring morning: rice planting
-  [54.2, 61.8, LOOK(['#6898cc', '#9cbcd8', '#e0e4d8', '#f0e4c4'], [255, 248, 232], [255, 225, 180, 0.08], { motes: 0.5 })],                            // the moated village at midday
+  [54.2, 61.8, LOOK(['#7aa6c4', '#a6c6c8', '#d8e6c4', '#ecefc4'], [250, 252, 232], [210, 240, 180, 0.1], { motes: 0.8, mote: [236, 255, 200] })],     // the moated village: humid summer, rice-green haze
   [61.8, 70.6, LOOK(['#3a2c58', '#6a4a78', '#c4708a', '#f0a874'], [214, 170, 190], [210, 120, 180, 0.16], { motes: 0.9, mote: [255, 190, 220] })],    // Himiko: a violet dusk, incense
   [70.6, 77.8, LOOK(['#5a7ab0', '#a0a8b8', '#f0c890', '#f8b866'], [255, 232, 196], [255, 180, 100, 0.16], { rays: 1, motes: 1.1, mote: [255, 220, 160] })], // the mirrors: a gold low sun
 );
-WX.push(['mist', 62.4, 71, [200, 150, 200], 0.24]);
+WX.push(['mist', 62.4, 71, [200, 150, 200], 0.24], ['mist', 54.6, 61.4, [226, 240, 210], 0.3]);
 PAPER_SUN.push([70.6, 77.6]);
 ZOOM.push([63, 65, 69.5, 71.5, 0.2]);
 
