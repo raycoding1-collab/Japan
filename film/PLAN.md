@@ -23,7 +23,7 @@ prints, kaizen, the animators, the sushi masters.
 - [x] Light script (ERAS + WX) for every era; crossfades checked
 - [x] Score + ambience (shakuhachi, koto, shamisen, biwa, taiko, shō, temple bell, tonkori, sanshin; piano, city pop, orchestra)
 - [x] Full sweep (every 3 s) and its fixes
-- [ ] Phone and phone-sideways sheets for every chapter; automated checks (scan, playtest, endtest, inapp, memory, starttrace)
+- [x] Phone and phone-sideways sheets for every chapter; automated checks (scan 0 errors at both sizes, playtest, endtest, inapp x4, starttrace; memory: see report)
 - [x] Share image, icon, README
 - [ ] Publish (GitHub Pages + TinyURL): needs the user's go-ahead for the first gh-pages push
 
