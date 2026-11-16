@@ -31,6 +31,8 @@ import './ch11_meiji.js';
 import './ch12_war.js';
 import './ch13_miracle.js';
 import './ch14_anime.js';
+import './ch15_hands.js';
+import './ch16_gold.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));
