@@ -156,6 +156,6 @@ hook({
         if (dip > 0.01) { g2.fillStyle = `rgba(60,96,120,${0.85 * dip})`; g2.fillRect(-190, 50 - dip * 10, 380, 90); g2.fillStyle = `rgba(200,230,240,${0.4 * dip})`; g2.fillRect(-190, 50 - dip * 10, 380, 3); }
         const steam = Math.exp(-(((t - ev('plunge', 269.3) - 0.6) / 0.9) ** 2)); if (steam > 0.02) for (let i = 0; i < 16; i++) { const x = -160 + hash(i * 3) * 320, y = 40 - (t - ev('plunge', 269.3)) * (60 + hash(i) * 80) - hash(i * 5) * 40; g2.fillStyle = `rgba(240,244,248,${0.55 * steam})`; g2.beginPath(); g2.arc(x, y, 14 + hash(i * 7) * 16, 0, 7); g2.fill(); }
       }
-    }, { light: [255, 130, 50], glow: 0.42, veil: 0.55, scale: 1.05 });
+    }, { light: [255, 130, 50], glow: 0.42, veil: 0.55, scale: por(st) ? 0.8 : 1.05 });
   },
 });

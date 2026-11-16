@@ -13,19 +13,19 @@ The thread through it all: **the hand and the craft**: Jōmon potters, haniwa, t
 every 20 years, the Nara eye-opening brush, kana calligraphy, the swordsmith, Noh, the tea room, woodblock
 prints, kaizen, the animators, the sushi masters.
 
-## Scheduled restarts (user's request, usage resets)
-- `trig_01R852ZTmK4cZKegTn5Le9j4` at 16:35 UTC, `trig_01JjjZcQec7LWW5B24LwtU57` at 21:35 UTC (2026-11-15).
-  Delete whichever is left once the film is finished.
+## Scheduled restarts
+- None. The user asked to stop the restarts ("continue when we talk next"); both were deleted.
 
 ## Status
 - [x] Template copied, tools installed (Playwright symlink, Kokoro venv in /home/user/tts), servers
 - [x] Research + script + narration timing (tools/layout.py lays out film.json's narration; 86 lines, 847 s)
-- [x] Chapter 1 built and judged (desktop, phone, phone sideways)
-- [ ] All chapters built: done ch1-7 (src/ch01..ch07); next ch08 Muromachi, ch09 Sengoku, ch10 Edo, ch11 Meiji, ch12 war, ch13 miracle, ch14 manga/anime, ch15 today, ch16 ending (kintsugi pull-back, SEAMS in film.js)
-- [ ] Light script (ERAS + WX) for every era
-- [ ] Score + ambience (shakuhachi, koto, shamisen, biwa, taiko, shō, temple bell)
-- [ ] Review rounds + full sweep + automated checks
-- [ ] Share image, icon, README, publish (GitHub Pages + TinyURL)
+- [x] All sixteen chapters built and judged at desktop size (src/ch01..ch16)
+- [x] Light script (ERAS + WX) for every era; crossfades checked
+- [x] Score + ambience (shakuhachi, koto, shamisen, biwa, taiko, shō, temple bell, tonkori, sanshin; piano, city pop, orchestra)
+- [x] Full sweep (every 3 s) and its fixes
+- [ ] Phone and phone-sideways sheets for every chapter; automated checks (scan, playtest, endtest, inapp, memory, starttrace)
+- [x] Share image, icon, README
+- [ ] Publish (GitHub Pages + TinyURL): needs the user's go-ahead for the first gh-pages push
 
 ## Architecture
 - `src/film_api.js`: shared tables (CAM, ZONES, SEAS, BUMPS, SKY/AMB/GRADE, ERAS, WX, NIGHTS, SUNS, ZOOM, FLOCKS, PAPER_SUN, MILKY, SEAMS) and helpers (add, hook, card, closeUp, drop...).

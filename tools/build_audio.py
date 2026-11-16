@@ -861,7 +861,7 @@ def build_score(EV, dur):
     # the Zen garden, Bashō's pond and the ending sound a little further away
     far = curve(n, [(0, 0), (295, 0), (296, 1), (301, 1), (302, 0), (424, 0), (425, 1), (433, 1), (434, 0), (825, 0), (827, 1), (dur, 1)])
     wet += reverb(S.wet * far[:, None], rt=4.5, wet=0.5, bright=1800, seed=11) * 0.5
-    return lp(wet + S.dry, 5000)
+    return lp(wet + S.dry, 5000) * 2.4
 
 # ----------------------------------------------------------------- ambience --
 def ambience(dur, EV):
@@ -881,7 +881,7 @@ def ambience(dur, EV):
     def clink(f=900, vel=1.0):
         m, tv = tvec(0.8); return nm(lp(sum(a * np.sin(TAU * f * r_ * tv + rs.rand() * 6) * np.exp(-tv / d) for r_, a, d in [(1, 1, 0.25), (2.7, 0.4, 0.08), (5.1, 0.2, 0.04)]) + lp(rs.randn(m), 1500) * np.exp(-tv / 0.003) * 0.2, 2400)) * vel
     def flutter(dur=0.9):
-        m, tv = tvec(dur); return lp(bp(rs.randn(m), 300, 1800) * np.sin(np.pi * tv / tv[-1]) ** 1.5 * (0.55 + 0.45 * np.sin(TAU * (9 + rs.rand() * 4) * tv) ** 2), 2200)
+        m, tv = tvec(dur); return lp(bp(rs.randn(m), 300, 1800) * np.clip(np.sin(np.pi * tv / tv[-1]), 0, 1) ** 1.5 * (0.55 + 0.45 * np.sin(TAU * (9 + rs.rand() * 4) * tv) ** 2), 2200)
     def swish(dur=0.5, lo=400, hi=1800):
         m, tv = tvec(dur); return bp(rs.randn(m), lo, hi) * np.sin(np.pi * tv / tv[-1]) ** 2
     def whoosh(dur=2.0, lo=120, hi=900):
@@ -997,7 +997,7 @@ def ambience(dur, EV):
     tt = E['folding']
     for i, d in enumerate([0.6] * 4 + [0.3] * 8 + [0.15] * 16): at(clank(0.05 + 0.02 * (i % 2 == 0), 300 + rs.rand() * 40), tt, 1, 0.2); tt += d
     for i in range(14): at(crackle(0.05), E['folding'] + 0.5 + rs.rand() * 4.5, 1, 0.2 + rs.randn() * 0.2)
-    m, tv = tvec(2.6); at(lp(rs.randn(m), 1400) * np.exp(-tv / 0.6) * 0.07 + lp(rs.randn(m), 300) * np.exp(-tv / 0.3) * 0.05, E['plunge'], 1, 0.1)   # the quench: a hiss of steam
+    m, tv = tvec(2.6); at(lp(lp(rs.randn(m), 1000), 1000) * np.exp(-tv / 0.6) * 0.08 + lp(rs.randn(m), 300) * np.exp(-tv / 0.3) * 0.05, E['plunge'], 1, 0.1)   # the quench: a hiss of steam
     # 8. a pond, a Zen rake, a tea bowl, staples
     for i in range(4): at(lp(swish(1.2, 250, 1000), 1100) * 0.045, E['raked'] + 0.4 + i * 1.3, 1, -0.2)
     at(thud(0.05, 140), E['bowl'] + 0.2, 1, 0.1)
@@ -1109,6 +1109,9 @@ def main():
     narrate.write_timeline(spec, tl, os.path.join(ROOT, 'src', 'timeline.js'))
     print('score'); music = build_score(EV, dur)
     print('ambience'); amb = ambience(dur, EV)
+    for nm_, x in (('music', music), ('amb', amb)):
+        bad = ~np.isfinite(x).all(axis=1)
+        if bad.any(): print(f'  WARNING: {nm_} has {bad.sum()} non-finite samples, first at {np.argmax(bad) / SR:.2f}s'); x[bad] = 0
     voice, music, amb = voice * 1.2, music * 0.60, amb * 2.6
     duck = 1 - 0.45 * lp(gate, 1.2, 1).clip(0, 1)
     mix = voice + music * duck[:, None] + amb * (0.85 + 0.15 * duck[:, None])
@@ -1122,7 +1125,7 @@ def main():
     from scipy.ndimage import maximum_filter1d, minimum_filter1d
     mix *= 10 ** (3 / 20)
     env = maximum_filter1d(np.abs(mix).max(axis=1), size=int(0.006 * SR))
-    gain = minimum_filter1d(np.minimum(1.0, 0.92 / np.maximum(env, 1e-9)), size=int(0.012 * SR))
+    gain = minimum_filter1d(np.minimum(1.0, 0.86 / np.maximum(env, 1e-9)), size=int(0.012 * SR))
     gain = np.minimum(gain, signal.sosfiltfilt(sos('lowpass', 12, 1), gain))
     mix *= gain[:, None]
     print(f'  limiter: max reduction {20 * np.log10(gain.min()):.1f} dB, final rms {db(mix):.1f} dBFS, peak {np.abs(mix).max():.2f}')

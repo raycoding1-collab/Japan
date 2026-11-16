@@ -119,7 +119,7 @@ hook({
     // 1968: the second largest economy
     if (t > T_68 - 2.2 && t < 643) card(st, g, cx, yH(drop(t, T_68 - 2, 641.4)) + 110 * u * sc, sc, Math.sin(t * 0.5) * DEG, (g2) => { put(g2, st.fx.plancard, 0.3, 4, 6); const jp = lerp(0.1, 0.165, sramp(t, T_68 - 1.6, T_68 + 0.2)); [['USA', 1, '#5a7a9a'], ['Japan', jp, '#c8402a'], ['W. Germany', 0.152, '#7a8a6a'], ['France', 0.13, '#8a7a9a'], ['Britain', 0.11, '#9a8a6a']].forEach(([n, v, c], i) => { const h = Math.min(150, v * 150 + 4); g2.fillStyle = c; g2.fillRect(-116 + i * 48, 80 - h, 34, h); label(g2, n, -99 + i * 48, 98, 11); }); label(g2, '1968', 70, -50, 26); }, 1, 130);
     // the palace grounds, said to be worth more than all of California
-    if (t > T_PAL - 0.8 && t < 658) card(st, g, cx, yH(drop(t, T_PAL - 0.6, 656.4)) + 110 * u * sc, sc, Math.sin(t * 0.5) * DEG, (g2) => {
+    if (t > T_PAL - 0.8 && t < 657) card(st, g, cx, yH(drop(t, T_PAL - 0.6, 654.6)) + 110 * u * sc, sc, Math.sin(t * 0.5) * DEG, (g2) => {
       put(g2, st.fx.plancard, 0.3, 4, 6); const tilt = -0.22 * sramp(t, T_PAL + 2.4, T_PAL + 3.6) * (1 + 0.1 * Math.sin(t * 3));
       g2.strokeStyle = '#4a3a2a'; g2.lineWidth = 3; g2.beginPath(); g2.moveTo(0, 70); g2.lineTo(0, -40); g2.stroke(); g2.save(); g2.translate(0, -40); g2.rotate(tilt); g2.beginPath(); g2.moveTo(-100, 0); g2.lineTo(100, 0); g2.stroke();
       for (const s of [-1, 1]) { g2.save(); g2.translate(s * 92, 0); g2.rotate(-tilt); g2.lineWidth = 1; g2.beginPath(); g2.moveTo(-26, 50); g2.lineTo(0, 0); g2.lineTo(26, 50); g2.stroke(); g2.fillStyle = '#8a7a5a'; g2.fillRect(-30, 50, 60, 5);
@@ -130,7 +130,7 @@ hook({
     }, 1, 130);
     // the bubble: golden, rising over the city, and then gone
     if (t > 654.8 && t < T_BURST + 1.2) {
-      const [x0, y0] = st.place('main', 1754, 300, t), k = sramp(t, 654.8, 657.4), x = x0 + Math.sin(t * 0.7) * 30 * u, y = y0 - k * 120 * u, r = (60 + 70 * k) * u * (1 + 0.03 * Math.sin(t * 5));
+      const [x0, y0] = st.place('main', 1754, 300, t), k = sramp(t, 654.8, 657.4), x = (p ? lerp(x0, W * 0.5, 0.75) : x0) + Math.sin(t * 0.7) * 30 * u, y = Math.max((60 + 70 * k) * u * 1.2, y0 - k * 120 * u), r = (60 + 70 * k) * u * (1 + 0.03 * Math.sin(t * 5));
       if (t < T_BURST) {
         g.save(); g.globalCompositeOperation = 'lighter';
         st.stamp(g, st.dot(255, 190, 90), x, y, r * 1.6, 0.35);
