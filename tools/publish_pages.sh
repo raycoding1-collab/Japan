@@ -16,12 +16,16 @@ else
   git -C "$DIR" checkout -q --orphan gh-pages
   git -C "$DIR" rm -rfq --cached . ; git -C "$DIR" clean -fdxq
 fi
-git -C "$DIR" rm -rq --ignore-unmatch src assets
+git -C "$DIR" rm -rq --ignore-unmatch src assets films
 mkdir -p "$DIR/src" "$DIR/assets/audio"
 cp index.html "$DIR/"
 cp src/*.js src/*.css "$DIR/src/"
 cp assets/audio/film.mp3 "$DIR/assets/audio/"
 cp assets/share.jpg assets/icon.png "$DIR/assets/"
+# the gallery of all three films, at /Japan/films/
+mkdir -p "$DIR/films/media"
+cp gallery/index.html "$DIR/films/"
+cp gallery/media/* "$DIR/films/media/"
 touch "$DIR/.nojekyll"
 git -C "$DIR" add -A
 if git -C "$DIR" diff --cached --quiet; then echo "GitHub Pages already up to date"; exit 0; fi
@@ -30,4 +34,4 @@ git -C "$DIR" commit -q -m "Publish the film from $(git rev-parse --short HEAD)
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01TN6JeFixfZTEHgQWcX2nh9"
 git -C "$DIR" push -q -u origin gh-pages
-echo "Published to https://raycoding1-collab.github.io/Japan/"
+echo "Published to https://raycoding1-collab.github.io/Japan/ and the gallery at https://raycoding1-collab.github.io/Japan/films/"

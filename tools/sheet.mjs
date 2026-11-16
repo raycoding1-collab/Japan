@@ -8,7 +8,7 @@ const dir = `shots/_${name}`; rmSync(dir, { recursive: true, force: true }); mkd
 const b = await chromium.launch(), p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
 p.on('pageerror', (e) => console.log('page error:', e.message));
 p.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('404')) console.log('console:', m.text()); });
-await p.goto(`http://localhost:8765/index.html?t=${ts[0]}`);
+await p.goto(`${process.env.BASE || 'http://localhost:8765/index.html'}?t=${ts[0]}`);   // BASE=https://.../Film/ to look at another published film
 await p.waitForFunction('window.__ready === true', null, { timeout: 60000 });
 await p.addStyleTag({ content: '#veil,#bar{display:none!important}' });
 for (let i = 0; i < ts.length; i++) {
