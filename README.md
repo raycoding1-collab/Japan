@@ -24,6 +24,15 @@ https://raycoding1-collab.github.io/Japan/. Built to be opened anywhere, includi
 Instagram DM on iPhone and Android. It is published from the `gh-pages` branch: run
 `tools/publish_pages.sh` to update it.
 
+## All three films together
+
+**https://tinyurl.com/paper-histories** (https://raycoding1-collab.github.io/Japan/films/): *Paper Histories*,
+a page with all three films (Everything So Far, The Long Thread and Mended with Gold), each with a smooth
+preview loop, wide on PCs and tall on phones. A card grows to fill the screen and its film opens inside it;
+the close button or Back returns to the page. Its source is `gallery/` (published to `films/` by
+`tools/publish_pages.sh`); `tools/preview.mjs` renders the preview loops from the published films and
+`tools/gallerytest.mjs` tests it on a PC, a phone and a phone on its side.
+
 ## Watch it locally
 
 ```sh
