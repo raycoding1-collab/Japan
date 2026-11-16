@@ -30,6 +30,7 @@ import './ch10_edo.js';
 import './ch11_meiji.js';
 import './ch12_war.js';
 import './ch13_miracle.js';
+import './ch14_anime.js';
 
 const byT = (p, q) => p[0] - q[0];
 const cam = monotone(CAM.sort(byT));
